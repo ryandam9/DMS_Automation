@@ -81,7 +81,13 @@ def process_csv_file(csv_file, action):
             else:
                 # This is partitioned table.
                 schema, table, partition_column, lower_bound, upper_bound = line.split(',')
-                upper_bound = upper_bound.strip('\n')
+
+                # Remove Spaces around this.
+                schema = schema.strip()
+                table = table.strip()
+                partition_column = partition_column.strip()
+                lower_bound = lower_bound.strip()
+                upper_bound = upper_bound.strip('\n').strip()
 
                 table_obj = Table(schema=schema, table=table, partition_column=partition_column,
                                   lower_bound=lower_bound, upper_bound=upper_bound, action=action)
