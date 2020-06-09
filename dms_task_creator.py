@@ -10,8 +10,9 @@ import boto3
 from config import *
 from task_settings import task_settings
 
-session = boto3.Session(profile_name='')
-client = session.client('dms')
+# session = boto3.Session(profile_name='')
+# client = session.client('dms')
+client = boto3.client('dms')
 
 # noinspection PyBroadException
 try:
@@ -221,36 +222,22 @@ def print_tables():
             logger.debug(table)
 
 
-def create_dms_tasks(schema, table, index, table_mapping):
+def create_dms_tasks(task_id, table_mapping):
     """
     Creates AWS Data Migration Task
     """
     try:
         response = client.create_replication_task(
-            ReplicationTaskIdentifier='{}-{}-{}'.format(schema, table, index).replace('_', '-'),
+            ReplicationTaskIdentifier=task_id,
             SourceEndpointArn=source_endpoint_arn,
             TargetEndpointArn=target_endpoint_arn,
             ReplicationInstanceArn=replication_instance_arn,
             MigrationType='full-load',
             TableMappings=table_mapping,
-            ReplicationTaskSettings=task_settings,
-            Tags=[
-                {
-                    'Key': 'schema',
-                    'Value': schema,
-                },
-                {
-                    'Key': 'table',
-                    'Value': table,
-                },
-                {
-                    'Key': 'index',
-                    'Value': index,
-                },
-            ],
+            ReplicationTaskSettings=task_settings
         )
     except Exception as error:
-        logger.error('Something went wrong while creating Replication task for: [{}.{}]'.format(schema, table))
+        logger.error('Something went wrong while creating Replication task for task_id: {}'.format(task_id))
         logger.error(error)
 
 
@@ -260,8 +247,9 @@ def process_json_files():
         table_mapping = json.dumps((json.load(file_handler)))
         file_handler.close()
 
-        schema, table, index, _ = json_file.split('.')
-        create_dms_tasks(schema, table, index, table_mapping)
+        task_id = json_file
+        task_id = task_id.replace('.json', '').replace('_', '-').replace('.', '-').strip()
+        create_dms_tasks(task_id, table_mapping)
 
 
 if __name__ == "__main__":
