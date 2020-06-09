@@ -10,7 +10,8 @@ import boto3
 from config import *
 from task_settings import task_settings
 
-client = boto3.client('dms')
+session = boto3.Session(profile_name='')
+client = session.client('dms')
 
 # noinspection PyBroadException
 try:
@@ -22,7 +23,6 @@ try:
 except Exception as error:
     print('Something went wrong while creating directories logs, json_files')
     sys.exit(1)
-
 
 # Setup logging
 logfile_location = 'logs/dms_automation.log'
@@ -79,24 +79,28 @@ def process_csv_file(csv_file, action):
 
                 non_partitioned_tables[schema].append(table_obj)
             else:
-                # This is partitioned table.
-                schema, table, partition_column, lower_bound, upper_bound = line.split(',')
+                if len(line.split(',')) == 5:
+                    # This is partitioned table.
+                    schema, table, partition_column, lower_bound, upper_bound = line.split(',')
 
-                # Remove Spaces around this.
-                schema = schema.strip()
-                table = table.strip()
-                partition_column = partition_column.strip()
-                lower_bound = lower_bound.strip()
-                upper_bound = upper_bound.strip('\n').strip()
+                    # Remove Spaces around this.
+                    schema = schema.strip()
+                    table = table.strip()
+                    partition_column = partition_column.strip()
+                    lower_bound = lower_bound.strip()
+                    upper_bound = upper_bound.strip('\n').strip()
 
-                table_obj = Table(schema=schema, table=table, partition_column=partition_column,
-                                  lower_bound=lower_bound, upper_bound=upper_bound, action=action)
+                    table_obj = Table(schema=schema, table=table, partition_column=partition_column,
+                                      lower_bound=lower_bound, upper_bound=upper_bound, action=action)
 
-                # Create an entry for the schema if it does not exist yet.
-                if schema not in partitioned_tables.keys():
-                    partitioned_tables[schema] = []
+                    # Create an entry for the schema if it does not exist yet.
+                    if schema not in partitioned_tables.keys():
+                        partitioned_tables[schema] = []
 
-                partitioned_tables[schema].append(table_obj)
+                    partitioned_tables[schema].append(table_obj)
+                else:
+                    logging.error('This line does not have either 2 or 5 values. Check it.')
+                    logging.error(line)
 
 
 def create_tasks(all_tables):
@@ -104,14 +108,21 @@ def create_tasks(all_tables):
     Creates JSON files that are needed to create Replication tasks
     """
     schemas = all_tables.keys()
-    index = 0
+    index = 5
 
     for schema in schemas:
         for table in all_tables[schema]:
             logger.debug('Processing table: {}.{}'.format(table.schema, table.table))
             index += 1
             data = dict()
-            file_name = '{}.{}.{}.json'.format(table.schema, table.table, index)
+
+            file_name = table.schema + '.' + table.table
+
+            if table.lower_bound is not None and table.upper_bound is not None:
+                file_name += '.' + table.lower_bound + '.' + table.upper_bound
+
+            file_name += '.json'
+
             data['rules'] = []
 
             # If it is a non-partitioned table
