@@ -19,7 +19,7 @@ task_settings = """
         "ParallelApplyQueuesPerThread": 0
     },
     "FullLoadSettings": {
-        "TargetTablePrepMode": "DO_NOTHING",
+        "TargetTablePrepMode": "TRUNCATE_BEFORE_LOAD",
         "CreatePkAfterFullLoad": false,
         "StopTaskCachedChangesApplied": false,
         "StopTaskCachedChangesNotApplied": false,

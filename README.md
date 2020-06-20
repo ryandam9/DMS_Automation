@@ -18,13 +18,14 @@ Following values should appear in the order:
   - `BETWEEN`
   - `GTE`
   - `STE`
-- `lower bound/upper bound`  
+- `lower bound`
+- `upper bound`  
 
 **Sample**
 ```sh
 HR,EMPLOYEES,JOINING_DATE,BETWEEN,2020-01-01,2020-01-31
-HR,EMPLOYEES,JOINING_DATE,STE,2020-01-01
-HR,EMPLOYEES,JOINING_DATE,GTE,2020-01-31
+HR,EMPLOYEES,JOINING_DATE,STE,2020-01-01,
+HR,EMPLOYEES,JOINING_DATE,GTE,2020-01-31,
 ```
 #### #2 For non-partitioned tables
 - `Schema`
@@ -68,3 +69,4 @@ For this input, generated JSON will look like this:
 }
 ```
 ****
+
