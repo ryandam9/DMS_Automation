@@ -48,11 +48,11 @@ logger.setLevel(log_level)
 # ----------------------------------------------------------------------------------------------------------------------#
 # Create a named tuple
 # ----------------------------------------------------------------------------------------------------------------------#
-Table = collections.namedtuple('Table',
-                               'schema, table, partition_column, operator, lower_bound, upper_bound, auto_partition, action')
+Table = collections.namedtuple('Table', 'schema, table, filters, auto_partitioned')
+Filter = collections.namedtuple('Filter', 'column, operator, value')
 
-partitioned_tables = {}
-non_partitioned_tables = {}
+filter_tables = []
+non_filter_tables = {}
 
 
 def delete_json_files():
@@ -62,20 +62,12 @@ def delete_json_files():
         print('File {} deleted'.format(file))
 
 
-def add_to_non_partitioned_map(schema, obj):
+def add_to_non_filter_tables(schema, obj):
     # Create an entry for the schema if it does not exist yet.
-    if schema not in non_partitioned_tables.keys():
-        non_partitioned_tables[schema] = []
+    if schema not in non_filter_tables.keys():
+        non_filter_tables[schema] = []
 
-    non_partitioned_tables[schema].append(obj)
-
-
-def add_to_partitioned_map(schema, obj):
-    # Create an entry for the schema if it does not exist yet.
-    if schema not in partitioned_tables.keys():
-        partitioned_tables[schema] = []
-
-    partitioned_tables[schema].append(obj)
+    non_filter_tables[schema].append(obj)
 
 
 def process_csv_file(csv_file, action):
@@ -87,60 +79,41 @@ def process_csv_file(csv_file, action):
     """
     with open(csv_file, 'r') as in_file:
         for line in in_file:
-            # If line has only 2 fields, it is a non-partitioned table
+            # This set of cases satisfy this condition
+            #  1. Table with no filter conditions
+            #  2. All tables in a schema (E.g., HR,%)
             if len(line.split(',')) == 2:
                 schema, table = line.split(',')
 
                 # Remove any special chars
                 schema = schema.strip()
                 table = table.strip('\n').strip()
+                table_obj = Table(schema=schema, table=table, filters=[], auto_partitioned=False)
 
-                table_obj = Table(schema=schema, table=table, partition_column=None, operator=None, lower_bound=None,
-                                  upper_bound=None, auto_partition=None, action=action)
+                add_to_non_filter_tables(schema, table_obj)
 
-                add_to_non_partitioned_map(schema, table_obj)
+            if len(line.split(',')) > 3:
+                cols = line.split(',')
+                schema, table = cols[0], cols[1]
 
-            else:
-                if len(line.split(',')) == 6:
-                    # This is partitioned table.
-                    schema, table, partition_column, operator, lower_bound, upper_bound = line.split(',')
+                filter_count = int(len(cols) - 2) / 3
+                index = 2
+                filters = list()
 
-                    # Remove Spaces around this.
-                    schema = schema.strip()
-                    table = table.strip()
-                    partition_column = partition_column.strip()
-                    operator = operator.strip().lower()
-                    lower_bound = lower_bound.strip()
-                    upper_bound = upper_bound.strip()
+                for i in range(0, int(filter_count)):
+                    column, operator, value = cols[index], cols[index + 1], cols[index + 2]
+                    filter_condition = Filter(column=column, operator=operator, value=value)
+                    filters.append(filter_condition)
 
-                    if len(upper_bound) == 0:
-                        upper_bound = None
+                    index += 3
 
-                    table_obj = Table(schema=schema, table=table, partition_column=partition_column, operator=operator,
-                                      lower_bound=lower_bound, upper_bound=upper_bound, auto_partition=None,
-                                      action=action)
+                table_obj = Table(schema=schema, table=table, filters=filters, auto_partitioned=False)
+                filter_tables.append(table_obj)
 
-                    # Create an entry for the schema if it does not exist yet.
-                    if schema not in partitioned_tables.keys():
-                        partitioned_tables[schema] = []
-
-                    partitioned_tables[schema].append(table_obj)
-                else:
-                    if len(line.split(',')) == 3:
-                        schema, table, _ = line.split(',')
-
-                        # Remove any special chars
-                        schema = schema.strip()
-                        table = table.strip('\n').strip()
-
-                        table_obj = Table(schema=schema, table=table, partition_column=None, operator=None,
-                                          lower_bound=None,
-                                          upper_bound=None, auto_partition=True, action=action)
-
-                        add_to_partitioned_map(schema, table_obj)
-                    else:
-                        logging.error('This line does not have either 2 or 5 values. Check it.')
-                        logging.error(line)
+            if len(line.split(',')) == 3:
+                schema, table, auto_partition_flag = line.split(',')
+                table_obj = Table(schema=schema, table=table, filters=[], auto_partitioned=True)
+                add_to_non_filter_tables(schema, table_obj)
 
 
 def convert_schemas_to_lowercase():
@@ -185,131 +158,142 @@ def convert_columns_to_lowercase():
     }
 
 
-def create_tasks(all_tables):
+def create_tasks_for_no_filter_tables(tables):
     """
-    Creates JSON files that are needed to create Replication tasks
+    Creates JSON files for tables that DO NOT have any filter conditions. Following tables fall under this
+    case.
+        1. Tables with no filter conditions (E.g., HR.EMPLOYEE)
+        2. Schema with all tables (E.g., HR,%)
+        3. Tables with "partitions-auto" specified (E.g., HR,EMPLOYEE,partitions-auto)
+
+    Our intention is to create a single DMS task to process all tables that belong a single schema.
+    As a result, a single JSON file will be created for a single schema.
     """
-    schemas = all_tables.keys()
+    schemas = tables.keys()
     index = 5
 
     for schema in schemas:
-        for table in all_tables[schema]:
+        data = dict()
+        data['rules'] = []
+
+        for table in tables[schema]:
             logger.debug('Processing table: {}.{}'.format(table.schema, table.table))
             index += 1
-            data = dict()
 
-            file_name = table.schema
+            file_name = table.schema + '.all_tables.json'
 
-            if table.table == '%':
-                file_name += '.all_tables'
+            entry = {
+                "rule-type": "selection",
+                "rule-id": index,
+                "rule-name": index,
+                "object-locator": {
+                    "schema-name": table.schema,
+                    "table-name": table.table
+                },
+                "rule-action": "include",
+            }
+
+            if table.auto_partitioned:
+                entry['parallel-load'] = {
+                    "type": "partitions-auto"
+                }
+
+            data['rules'].append(entry)
+
+        # Add a Transformation
+        data['rules'].append(convert_schemas_to_lowercase())
+        data['rules'].append(convert_tables_to_lowercase())
+        data['rules'].append(convert_columns_to_lowercase())
+
+        with open(os.path.join('json_files', file_name), 'w') as fp:
+            json.dump(data, fp)
+
+
+def create_tasks_for_filter_tables(tables):
+    """
+    Creates JSON files for tables that DO HAVE any filter conditions.
+
+    One JSON file will be created for each table/condition.
+    """
+    index = 5
+    table_count = 1
+
+    for table in tables:
+        data = dict()
+        data['rules'] = []
+
+        logger.debug('Processing table: {}.{}'.format(table.schema, table.table))
+        index += 1
+
+        file_name = '{}-{}-{}.json'.format(table.schema, table.table, table_count)
+
+        entry = {
+            "rule-type": "selection",
+            "rule-id": index,
+            "rule-name": index,
+            "object-locator": {
+                "schema-name": table.schema,
+                "table-name": table.table
+            },
+            "rule-action": "include",
+        }
+
+        # Generate filter conditions
+        filter_conditions = []
+        for fil in table.filters:
+            column = fil.column
+            operator = fil.operator.lower()
+            value = fil.value
+
+            condition = {}
+
+            if operator == 'between':
+                lower, upper = value.split('~')
+                upper = upper.strip('\n').strip()
+
+                condition = {
+                        "filter-operator": operator,
+                        "start-value": lower,
+                        "end-value": upper,
+                    }
             else:
-                file_name += '.' + table.table
-
-            if table.lower_bound is not None and table.upper_bound is not None:
-                file_name += '.' + table.lower_bound + '.' + table.upper_bound
-            else:
-                if table.lower_bound is not None:
-                    file_name += '.' + table.operator + '.' + table.lower_bound
-
-            file_name += '.json'
-
-            data['rules'] = []
-
-            # If it is a non-partitioned table
-            if table.partition_column is None and table.auto_partition is None:
-                data['rules'].append({
-                    "rule-type": "selection",
-                    "rule-id": index,
-                    "rule-name": index,
-                    "object-locator": {
-                        "schema-name": table.schema,
-                        "table-name": table.table
-                    },
-                    "rule-action": table.action,
-                })
-
-            # If 'auto-partition' is specified,
-            if table.partition_column is None and table.auto_partition is not None:
-                data['rules'].append({
-                    "rule-type": "selection",
-                    "rule-id": index,
-                    "rule-name": index,
-                    "object-locator": {
-                        "schema-name": table.schema,
-                        "table-name": table.table
-                    },
-                    "rule-action": table.action
-                })
-
-                data['rules'].append({
-                    "rule-type": "table-settings",
-                    "rule-id": index + 1,
-                    "rule-name": index + 1,
-                    "object-locator": {
-                        "schema-name": table.schema,
-                        "table-name": table.table
-                    },
-                    "parallel-load": {
-                        "type": "partitions-auto"
-                    }
-                })
-
-            # If partition column is specified,
-            if table.partition_column is not None:
-                condition = {}
-                if table.operator == 'between':
-                    condition = {
-                        "filter-operator": table.operator,
-                        "start-value": table.lower_bound,
-                        "end-value": table.upper_bound
-                    }
-                else:
-                    condition = {
-                        "filter-operator": table.operator,
-                        "value": table.lower_bound
+                condition = {
+                        "filter-operator": operator,
+                        "value": value
                     }
 
-                data['rules'].append({
-                    "rule-type": "selection",
-                    "rule-id": index,
-                    "rule-name": index,
-                    "object-locator": {
-                        "schema-name": table.schema,
-                        "table-name": table.table
-                    },
-                    "rule-action": table.action,
-                    "filters":
-                        [
-                            {
-                                "filter-type": "source",
-                                "column-name": table.partition_column,
-                                "filter-conditions": [
-                                    condition
-                                ]
-                            }
-                        ]
-                })
+            filter_condition = {
+                "filter-type": "source",
+                "column-name": column,
+                "filter-conditions": [
+                    condition
+                ]
+            }
 
-            # Add a Transformation
-            data['rules'].append(convert_schemas_to_lowercase())
-            data['rules'].append(convert_tables_to_lowercase())
-            data['rules'].append(convert_columns_to_lowercase())
+            filter_conditions.append(filter_condition)
 
-            with open(os.path.join('json_files', file_name), 'w') as fp:
-                json.dump(data, fp)
+        entry['filters'] = filter_conditions
+
+        data['rules'].append(entry)
+
+        # Add a Transformation
+        data['rules'].append(convert_schemas_to_lowercase())
+        data['rules'].append(convert_tables_to_lowercase())
+        data['rules'].append(convert_columns_to_lowercase())
+
+        with open(os.path.join('json_files', file_name), 'w') as fp:
+            json.dump(data, fp)
 
 
 def print_tables():
-    logger.debug('All partitioned tables')
-    schemas = partitioned_tables.keys()
-    for schema in schemas:
-        for table in partitioned_tables[schema]:
-            logger.debug(table)
+    logger.debug('All tables with filter conditions')
+    for table in filter_tables:
+        logger.debug(table)
 
-    logger.debug('All non partitioned tables')
-    schemas = non_partitioned_tables.keys()
+    logger.debug('All Tables without filter conditions')
+    schemas = non_filter_tables.keys()
     for schema in schemas:
-        for table in non_partitioned_tables[schema]:
+        for table in non_filter_tables[schema]:
             logger.debug(table)
 
 
@@ -421,8 +405,8 @@ def create_dms_tasks():
     print_tables()
 
     # Create tasks in JSON form
-    create_tasks(partitioned_tables)
-    create_tasks(non_partitioned_tables)
+    create_tasks_for_no_filter_tables(non_filter_tables)
+    create_tasks_for_filter_tables(filter_tables)
 
     logger.debug('JSON files have been created')
 
