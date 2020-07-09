@@ -12,6 +12,7 @@ from task_settings import task_settings
 
 session = boto3.Session(profile_name='pavan')
 client = session.client('dms')
+sns = session.client('sns')
 
 # ----------------------------------------------------------------------------------------------------------------------#
 # Initial setup
@@ -102,6 +103,11 @@ def process_csv_file(csv_file, action):
 
                 for i in range(0, int(filter_count)):
                     column, operator, value = cols[index], cols[index + 1], cols[index + 2]
+
+                    column = column.strip()
+                    operator = operator.strip()
+                    value = value.strip('\n').strip()
+
                     filter_condition = Filter(column=column, operator=operator, value=value)
                     filters.append(filter_condition)
 
@@ -225,8 +231,6 @@ def create_tasks_for_filter_tables(tables):
         logger.debug('Processing table: {}.{}'.format(table.schema, table.table))
         index += 1
 
-        file_name = '{}-{}-{}.json'.format(table.schema, table.table, table_count)
-
         entry = {
             "rule-type": "selection",
             "rule-id": index,
@@ -237,6 +241,8 @@ def create_tasks_for_filter_tables(tables):
             },
             "rule-action": "include",
         }
+
+        part_of_filename = ''
 
         # Generate filter conditions
         filter_conditions = []
@@ -256,11 +262,17 @@ def create_tasks_for_filter_tables(tables):
                         "start-value": lower,
                         "end-value": upper,
                     }
+
+                if len(part_of_filename) == 0:
+                    part_of_filename = lower + '-' + upper
             else:
                 condition = {
                         "filter-operator": operator,
                         "value": value
                     }
+
+                if len(part_of_filename) == 0:
+                    part_of_filename = value
 
             filter_condition = {
                 "filter-type": "source",
@@ -280,6 +292,9 @@ def create_tasks_for_filter_tables(tables):
         data['rules'].append(convert_schemas_to_lowercase())
         data['rules'].append(convert_tables_to_lowercase())
         data['rules'].append(convert_columns_to_lowercase())
+
+        file_name = '{}-{}-{}.json'.format(table.schema, table.table, part_of_filename)
+        file_name = file_name.replace('_', '-')
 
         with open(os.path.join('json_files', file_name), 'w') as fp:
             json.dump(data, fp)
@@ -346,19 +361,40 @@ def process_json_files():
         else:
             count += 1
 
+    wait_for_status_change('replication_task_ready', arn_list)
+    print('{} tasks have been created and ready'.format(len(arn_list)))
+
     # Persist the ARNs in a file.
     with open(task_arn_file, 'w') as file_handle:
         [file_handle.write('%s\n' % arn) for arn in arn_list]
 
     if count > 0:
         print('{} errors encountered while creating DMS tasks. Check the log file.'.format(count))
+    else:
+        send_mail('{} tasks have been created and ready'.format(len(arn_list)))
+
+
+def wait_for_status_change(waiter, arn_list):
+    waiter = client.get_waiter(waiter)
+    waiter.wait(
+        Filters=[
+            {
+                'Name': 'replication-task-arn',
+                'Values': arn_list
+            },
+        ],
+    )
 
 
 def start_dms_tasks():
     count = 0
+    arn_list = []
+
     with open(task_arn_file, 'r') as arn_file:
         for arn in arn_file:
             arn = arn.strip('\n')
+            arn_list.append(arn)
+
             try:
                 response = client.start_replication_task(
                     ReplicationTaskArn=arn,
@@ -369,26 +405,43 @@ def start_dms_tasks():
                 count += 1
                 logger.error('Error starting task with ARN: {}'.format(arn))
 
+    wait_for_status_change('replication_task_stopped', arn_list)
+
     if count > 0:
-        print('{} errors encountered while starting DMS tasks. Check the log file.'.format(count))
+        msg = '{} errors encountered while starting DMS tasks. Check the log file.'.format(count)
+        print(msg)
+        send_mail(msg)
+    else:
+        msg = '{} tasks have been executed'.format(len(arn_list))
+        print(msg)
+        send_mail(msg)
 
 
 def delete_dms_tasks():
     count = 0
+    arns_to_be_deleted = []
+
     with open(task_arn_file, 'r') as arn_file:
         for arn in arn_file:
             arn = arn.strip('\n')
+            arns_to_be_deleted.append(arn)
+
             try:
                 response = client.delete_replication_task(
                     ReplicationTaskArn=arn
                 )
-                print('Task: {} has been deleted'.format(arn))
+                print('Task: {} deletion in progress...'.format(arn))
             except Exception as error:
                 count += 1
                 logger.error('Error deleting task with ARN: {}'.format(arn))
 
+    wait_for_status_change('replication_task_deleted', arns_to_be_deleted)
+
     if count > 0:
         print('{} errors encountered while deleting DMS tasks. Check the log file.'.format(count))
+    else:
+        print('{} tasks have been deleted!'.format(len(arns_to_be_deleted)))
+        send_mail('Tasks Deleted!!')
 
 
 def create_dms_tasks():
@@ -426,6 +479,14 @@ def list_dms_tasks():
             err_msg = task['LastFailureMessage']
 
         print('{0:50} {1:10} {2:30}'.format(task['ReplicationTaskArn'], task['Status'], err_msg))
+
+
+def send_mail(message):
+    try:
+        if len(sns_topic_arn) > 0:
+            sns.publish(TopicArn=sns_topic_arn, Message=message,)
+    except Exception as exception:
+        None
 
 
 if __name__ == "__main__":
