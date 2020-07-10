@@ -181,12 +181,11 @@ def create_tasks_for_no_filter_tables(tables):
     for schema in schemas:
         data = dict()
         data['rules'] = []
+        file_name = schema + '.all_tables.json'
 
         for table in tables[schema]:
             logger.debug('Processing table: {}.{}'.format(table.schema, table.table))
             index += 1
-
-            file_name = table.schema + '.all_tables.json'
 
             entry = {
                 "rule-type": "selection",
@@ -258,18 +257,18 @@ def create_tasks_for_filter_tables(tables):
                 upper = upper.strip('\n').strip()
 
                 condition = {
-                        "filter-operator": operator,
-                        "start-value": lower,
-                        "end-value": upper,
-                    }
+                    "filter-operator": operator,
+                    "start-value": lower,
+                    "end-value": upper,
+                }
 
                 if len(part_of_filename) == 0:
                     part_of_filename = lower + '-' + upper
             else:
                 condition = {
-                        "filter-operator": operator,
-                        "value": value
-                    }
+                    "filter-operator": operator,
+                    "value": value
+                }
 
                 if len(part_of_filename) == 0:
                     part_of_filename = value
@@ -374,8 +373,8 @@ def process_json_files():
         send_mail('{} tasks have been created and ready'.format(len(arn_list)))
 
 
-def wait_for_status_change(waiter, arn_list):
-    waiter = client.get_waiter(waiter)
+def wait_for_status_change(waiter_state, arn_list):
+    waiter = client.get_waiter(waiter_state)
     waiter.wait(
         Filters=[
             {
@@ -405,14 +404,16 @@ def start_dms_tasks():
                 count += 1
                 logger.error('Error starting task with ARN: {}'.format(arn))
 
-    wait_for_status_change('replication_task_stopped', arn_list)
+    # We cannot do this as there is a known bug in boto3.
+    # https://github.com/boto/boto3/issues/1926
+    # wait_for_status_change('replication_task_stopped', arn_list)
 
     if count > 0:
         msg = '{} errors encountered while starting DMS tasks. Check the log file.'.format(count)
         print(msg)
         send_mail(msg)
     else:
-        msg = '{} tasks have been executed'.format(len(arn_list))
+        msg = '{} tasks have been started'.format(len(arn_list))
         print(msg)
         send_mail(msg)
 
@@ -484,7 +485,7 @@ def list_dms_tasks():
 def send_mail(message):
     try:
         if len(sns_topic_arn) > 0:
-            sns.publish(TopicArn=sns_topic_arn, Message=message,)
+            sns.publish(TopicArn=sns_topic_arn, Message=message, )
     except Exception as exception:
         None
 
