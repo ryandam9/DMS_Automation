@@ -10,6 +10,7 @@ import boto3
 from config import *
 from task_settings import task_settings
 
+# AWS CLI profile name
 session = boto3.Session(profile_name='pavan')
 client = session.client('dms')
 sns = session.client('sns')
@@ -47,40 +48,60 @@ logger.addHandler(handler)
 logger.setLevel(log_level)
 
 # ----------------------------------------------------------------------------------------------------------------------#
-# Create a named tuple
+# Create named tuples to hold Table, and filter attributes
 # ----------------------------------------------------------------------------------------------------------------------#
+
+# Each table should be associated with a schema. Table will have filters applied to it.
 Table = collections.namedtuple('Table', 'schema, table, filters, auto_partitioned')
+
+# Each filter is composed of three attributes
+#  1. Column name
+#  2. Operator name (eq, ste, gte, between)
+#  3. Filter value (Note - In case of between, two values are needed. They should be separated with "~")
 Filter = collections.namedtuple('Filter', 'column, operator, value')
 
+# holds tables that have filter conditions
 filter_tables = []
+
+# This is a map with key as schema name.this map holds all the tables under a
+# schema.
 non_filter_tables = {}
 
 
 def delete_json_files():
-    # Delete existing json files
+    """
+     Deletes json files in "json_files" directory.
+    """
     for file in os.listdir('./json_files'):
         os.remove(os.path.join('.', 'json_files', file))
         print('File {} deleted'.format(file))
 
 
 def add_to_non_filter_tables(schema, obj):
-    # Create an entry for the schema if it does not exist yet.
+    """
+     Adds a table object to the dict.
+    """
+
+    # Create an entry for the schema.
     if schema not in non_filter_tables.keys():
         non_filter_tables[schema] = []
 
+    # Append the table object.
     non_filter_tables[schema].append(obj)
 
 
 def process_csv_file(csv_file, action):
     """
-    Reads Input CSV file that has got Schema and table details and create a dictionary where key
-    is 'Schema' and value is 'List of Table names'.
+    Reads Input "csv" file(s) and segregates tables into (a) tables that have no filter conditions
+    (b) tables that have filter conditions.
 
-    This function updates 'partitioned_tables',  'non_partitioned_tables'
+    It is assumed that tables with filter conditions are huge. as a result, they should have a dedicated DMS
+    task created for them. On the other hand, all tables with no filter conditions under a schema should be handled by
+    a single DMS task.
     """
     with open(csv_file, 'r') as in_file:
         for line in in_file:
-            # This set of cases satisfy this condition
+            # Following cases fall into this category.
             #  1. Table with no filter conditions
             #  2. All tables in a schema (E.g., HR,%)
             if len(line.split(',')) == 2:
@@ -93,12 +114,19 @@ def process_csv_file(csv_file, action):
 
                 add_to_non_filter_tables(schema, table_obj)
 
+            # These are the tables with filter conditions.
             if len(line.split(',')) > 3:
                 cols = line.split(',')
-                schema, table = cols[0], cols[1]
+                schema, table = cols[0], cols[1]          # First two positions have schema, table respectively.
 
+                schema = schema.strip()
+                table = table.strip()
+
+                # Identify filter count. Each filter is a set of 3 columns.
                 filter_count = int(len(cols) - 2) / 3
                 index = 2
+
+                # holds all filter conditions of a given table.
                 filters = list()
 
                 for i in range(0, int(filter_count)):
@@ -108,14 +136,20 @@ def process_csv_file(csv_file, action):
                     operator = operator.strip()
                     value = value.strip('\n').strip()
 
+                    # Store the filter details in a named table.
                     filter_condition = Filter(column=column, operator=operator, value=value)
                     filters.append(filter_condition)
 
+                    # Add the index to process next filter condition.
                     index += 3
 
+                # Create a Table object.
                 table_obj = Table(schema=schema, table=table, filters=filters, auto_partitioned=False)
                 filter_tables.append(table_obj)
 
+            # If an entry has exactly 3 columns, at this point, it is assumed that the 3rd column
+            # specifies "partition-auto" specified. This condition needs to be revisited in case more
+            # scenarios need to be handled in future.
             if len(line.split(',')) == 3:
                 schema, table, auto_partition_flag = line.split(',')
                 table_obj = Table(schema=schema, table=table, filters=[], auto_partitioned=True)
@@ -198,6 +232,8 @@ def create_tasks_for_no_filter_tables(tables):
                 "rule-action": "include",
             }
 
+            # If the table is specified to have have "partitions-auto" in the input csv file
+            # create this entry.
             if table.auto_partitioned:
                 entry['parallel-load'] = {
                     "type": "partitions-auto"
@@ -221,7 +257,6 @@ def create_tasks_for_filter_tables(tables):
     One JSON file will be created for each table/condition.
     """
     index = 5
-    table_count = 1
 
     for table in tables:
         data = dict()
@@ -284,7 +319,6 @@ def create_tasks_for_filter_tables(tables):
             filter_conditions.append(filter_condition)
 
         entry['filters'] = filter_conditions
-
         data['rules'].append(entry)
 
         # Add a Transformation
@@ -360,6 +394,7 @@ def process_json_files():
         else:
             count += 1
 
+    # Wait for the tasks to be in "READY" state
     wait_for_status_change('replication_task_ready', arn_list)
     print('{} tasks have been created and ready'.format(len(arn_list)))
 
@@ -370,10 +405,13 @@ def process_json_files():
     if count > 0:
         print('{} errors encountered while creating DMS tasks. Check the log file.'.format(count))
     else:
-        send_mail('{} tasks have been created and ready'.format(len(arn_list)))
+        send_mail('{} tasks have been created and in ready state'.format(len(arn_list)))
 
 
 def wait_for_status_change(waiter_state, arn_list):
+    """
+    Creates waiters for DMS.
+    """
     waiter = client.get_waiter(waiter_state)
     waiter.wait(
         Filters=[
@@ -389,6 +427,7 @@ def start_dms_tasks():
     count = 0
     arn_list = []
 
+    # Read the task ARNs from "task_arn.txt" file and start the DMS tasks.
     with open(task_arn_file, 'r') as arn_file:
         for arn in arn_file:
             arn = arn.strip('\n')
@@ -404,9 +443,14 @@ def start_dms_tasks():
                 count += 1
                 logger.error('Error starting task with ARN: {}'.format(arn))
 
-    # We cannot do this as there is a known bug in boto3.
+    # Once all the tasks have been started, we wanted to wait for all of them
+    # to get completed. that's when their status change to 'replication_task_stopped'.
+    # However, there seems to be a bug with this waiter in boto3.
     # https://github.com/boto/boto3/issues/1926
     # wait_for_status_change('replication_task_stopped', arn_list)
+
+    # So, we are simply starting the tasks and return. we are NOT waiting for them
+    # to get completed.
 
     if count > 0:
         msg = '{} errors encountered while starting DMS tasks. Check the log file.'.format(count)
@@ -419,6 +463,9 @@ def start_dms_tasks():
 
 
 def delete_dms_tasks():
+    """
+    Delete DMS tasks. The tasks to be deleted come from "task_arn.txt" file.
+    """
     count = 0
     arns_to_be_deleted = []
 
@@ -436,13 +483,14 @@ def delete_dms_tasks():
                 count += 1
                 logger.error('Error deleting task with ARN: {}'.format(arn))
 
-    wait_for_status_change('replication_task_deleted', arns_to_be_deleted)
-
     if count > 0:
         print('{} errors encountered while deleting DMS tasks. Check the log file.'.format(count))
     else:
-        print('{} tasks have been deleted!'.format(len(arns_to_be_deleted)))
-        send_mail('Tasks Deleted!!')
+        wait_for_status_change('replication_task_deleted', arns_to_be_deleted)
+
+        msg = '{} tasks have been deleted!'.format(len(arns_to_be_deleted))
+        print(msg)
+        send_mail(msg)
 
 
 def create_dms_tasks():
