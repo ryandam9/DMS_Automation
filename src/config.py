@@ -6,6 +6,11 @@ sns_topic_arn = ''
 
 DEFAULT_REGION = "us-east-2"
 MAX_TASKS_PER_PAGE = 100
+SOURCE_DB_ID = "database-1"
+TARGET_DB_ID = "demo"
+
+# This variable controls how many RDS DB log files to be fetched
+DB_LOG_FILE_COUNT = 1
 
 csv_files_location = '../config'
 json_files_location = '../json_files'

@@ -1,14 +1,17 @@
 import ast
 import json
 import os
+import re
 import sys
+import textwrap
 from datetime import datetime
 from email import header
 
 import boto3
 from tabulate import tabulate
 
-from config import (MAX_TASKS_PER_PAGE, json_files_location,
+from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
+                    TARGET_DB_ID, json_files_location,
                     replication_instance_arn, sns_topic_arn,
                     source_endpoint_arn, target_endpoint_arn, task_arn_file)
 from task_settings import task_settings
@@ -373,6 +376,13 @@ def describe_table_statistics(profile, region):
         print("** Something went wrong while describing table statistics. **")
         print(error)
 
+    # Fetch Source & Target DB Logs
+    print("\n")
+    print("*" * 120)
+    print("Source & Target DB latest DB logs")
+    print("*" * 120)
+    describe_db_log_files(profile, region)
+
 
 def create_iam_role_for_dms_cloudwatch_logs(profile, region):
     """
@@ -419,25 +429,36 @@ def create_iam_role_for_dms_cloudwatch_logs(profile, region):
 
 
 def fetch_cloudwatch_logs_for_a_task(profile, region, task_arn):
+    """
+    Fetch CloudWatch Logs for a Task
+
+    Input:
+        Task ARN
+    """
     try:
         session = boto3.Session(profile_name=profile, region_name=region)
         dms = session.client("dms")
         cloudwatch = session.client("logs")
 
         response = dms.describe_replication_tasks(
-            Filters = [
+            Filters=[
                 {
-                    'Name': 'replication-task-arn',
-                    'Values': [
+                    "Name": "replication-task-arn",
+                    "Values": [
                         task_arn,
-                    ]
+                    ],
                 }
-            ])
+            ]
+        )
 
         replication_task = response["ReplicationTasks"][0]
 
-        cloudwatch_log_group = json.loads(replication_task['ReplicationTaskSettings'])['Logging']['CloudWatchLogGroup']
-        cloudwatch_log_stream = json.loads(replication_task['ReplicationTaskSettings'])['Logging']['CloudWatchLogStream']
+        cloudwatch_log_group = json.loads(replication_task["ReplicationTaskSettings"])[
+            "Logging"
+        ]["CloudWatchLogGroup"]
+        cloudwatch_log_stream = json.loads(replication_task["ReplicationTaskSettings"])[
+            "Logging"
+        ]["CloudWatchLogStream"]
 
         response = cloudwatch.filter_log_events(
             logGroupName=cloudwatch_log_group,
@@ -453,7 +474,159 @@ def fetch_cloudwatch_logs_for_a_task(profile, region, task_arn):
             # interleaved=True|False
         )
 
-        print(json.dumps(response, indent = 4, sort_keys=True, default=str))
+        print(f"Log Group : {cloudwatch_log_group}")
+        print(f"Log Stream: {cloudwatch_log_stream}")
+
+        result = []
+
+        for line, event in enumerate(response["events"]):
+            result.append(
+                [
+                    line,
+                    event["message"][0:16],
+                    event["message"].split("]")[1][0],
+                    re.search(r"\[.*\]", event["message"][0:50]).group(0),
+                    "\n".join(
+                        textwrap.wrap(
+                            event["message"][49:], width=150, replace_whitespace=False
+                        )
+                    ),
+                ]
+            )
+
+        print(
+            tabulate(
+                result,
+                headers=[
+                    "line",
+                    "Timestamp",
+                    "Message Type",
+                    "Source",
+                    "Message",
+                ],
+                tablefmt="fancy_grid",
+            )
+        )
+
+        # print(json.dumps(response, indent = 4, sort_keys=True, default=str))
 
     except Exception as error:
+        print("** Something went wrong while fetching CloudWatch Logs for a Task. **")
+        print(error)
+
+
+def describe_endpoints(profile, region):
+    """ """
+    try:
+        session = boto3.Session(profile_name=profile, region_name=region)
+        dms = session.client("dms")
+
+        result = []
+
+        response = dms.describe_endpoints(
+            Filters=[
+                {
+                    "Name": "endpoint-arn",
+                    "Values": [
+                        source_endpoint_arn,
+                        target_endpoint_arn,
+                    ],
+                },
+            ],
+        )
+
+        for db_endpoint in response["Endpoints"]:
+            db_specific_key = db_endpoint["EngineDisplayName"] + "Settings"
+
+            extra_connection_attributes = ""
+            if "ExtraConnectionAttributes" in db_endpoint.keys():
+                extra_connection_attributes = db_endpoint["ExtraConnectionAttributes"]
+
+            result.append(
+                [
+                    db_endpoint["EndpointIdentifier"],
+                    db_endpoint["EndpointType"],
+                    db_endpoint["EngineDisplayName"],
+                    db_endpoint[db_specific_key]["ServerName"],
+                    db_endpoint[db_specific_key]["DatabaseName"],
+                    db_endpoint[db_specific_key]["Port"],
+                    db_endpoint[db_specific_key]["Username"],
+                    extra_connection_attributes,
+                ]
+            )
+
+        print(
+            tabulate(
+                result,
+                headers=[
+                    "Endpoint_ID",
+                    "Type",
+                    "Database",
+                    "Server",
+                    "DB",
+                    "Port",
+                    "User",
+                    "Extra Attributes",
+                ],
+                tablefmt="fancy_grid",
+            )
+        )
+
+        # print(json.dumps(response, indent=4, sort_keys=True, default=str))
+        return result
+
+    except Exception as err:
+        print("** Something went wrong while describing DB Endpoints **")
+        print(err)
+        sys.exit(1)
+
+
+def describe_db_log_files(profile, region):
+    """
+    Get DB Logs
+
+    Input:
+        Profile
+        Region
+    """
+    try:
+        session = boto3.Session(profile_name=profile, region_name=region)
+        rds = session.client("rds")
+
+        def fetch_log_file(db_id):
+            result = []
+
+            response = rds.describe_db_log_files(
+                DBInstanceIdentifier=db_id,
+            )
+
+            for log_file in response["DescribeDBLogFiles"][-1 * DB_LOG_FILE_COUNT : -1]:
+                resp = rds.download_db_log_file_portion(
+                    DBInstanceIdentifier=db_id,
+                    LogFileName=log_file["LogFileName"],
+                )
+
+                for line in resp["LogFileData"].split("\n"):
+                    result.append(
+                        [
+                            db_id,
+                            log_file["LogFileName"],
+                            "\n".join(
+                                textwrap.wrap(
+                                    line, width=150, replace_whitespace=False
+                                ),
+                            ),
+                        ],
+                    )
+
+            return result
+
+        logs = fetch_log_file(SOURCE_DB_ID)
+        print(tabulate(logs, headers=["DB_ID", "Logs"], tablefmt="fancy_grid"))
+
+        logs = fetch_log_file(TARGET_DB_ID)
+        print(tabulate(logs, headers=["DB_ID", "Logs"], tablefmt="fancy_grid"))
+
+    except Exception as error:
+        print("** Something went wrong while getting DB Logs. **")
         print(error)

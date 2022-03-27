@@ -4,9 +4,9 @@ from pathlib import Path
 
 from config import DEFAULT_REGION
 from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
-                 delete_dms_tasks, describe_table_statistics,
-                 fetch_cloudwatch_logs_for_a_task, list_dms_tasks,
-                 start_dms_tasks, test_db_connection)
+                 delete_dms_tasks, describe_db_log_files, describe_endpoints,
+                 describe_table_statistics, fetch_cloudwatch_logs_for_a_task,
+                 list_dms_tasks, start_dms_tasks, test_db_connection)
 from process_input_files import process_input_files
 from utils import get_aws_cli_profile
 
@@ -27,6 +27,8 @@ actions = [
     "describe_table_statistics",
     "create_iam_role_for_dms_cloudwatch_logs",
     "fetch_cloudwatch_logs_for_a_task",
+    "describe_endpoints",
+    "describe_db_log_files",
 ]
 
 parser.add_argument(
@@ -109,3 +111,9 @@ if args.action == "fetch_cloudwatch_logs_for_a_task":
         print("... --action fetch_cloudwatch_logs_for_a_task --task_arn XXX")
     else:    
         fetch_cloudwatch_logs_for_a_task(args.profile, args.region, args.task_arn)
+
+if args.action == "describe_endpoints":
+    describe_endpoints(args.profile, args.region)
+
+if args.action == "describe_db_log_files":
+    describe_db_log_files(args.profile, args.region)
