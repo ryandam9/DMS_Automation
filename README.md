@@ -31,78 +31,38 @@ ADMIN,JOB_HISTORY,START_DATE,BETWEEN,1998-01-01~1999-12-31,JOB_ID,EQ,ST_CLERK
 ## Sample Execution
 
 ```shell script
-─
-╰─○ cd DMS_Automation
-
-─
-╰─○ ls -l
--rw-rw-r-- 1 ryandam ryandam   419 Jul 10 22:06 config.py
--rw-rw-r-- 1 ryandam ryandam 18862 Jul 11 10:54 dms_task_creator.py
--rw-rw-r-- 1 ryandam ryandam   178 Jul  9 23:07 include.csv
--rw-rw-r-- 1 ryandam ryandam  2973 Jul 11 11:23 README.md
--rw-rw-r-- 1 ryandam ryandam  5428 Jun 20 14:20 task_settings.py
+cd DMS_Automation/src
+python app.py -h
 ```
 
-### 
-```sh
-─
-╰─○ python3 dms_task_creator.py 
-Pass required parameter
-Usage: python dms_task_creator.py [--create-tasks | --run-tasks | --delete-tasks | --list-tasks]
-``` 
+```
+usage: app.py [-h] [--profile PROFILE] [--region REGION]
+              [--action {generate_json_files,create_dms_tasks,list_dms_tasks,delete_dms_tasks,start_dms_tasks,test_db_connection_from_replication_instance,describe_table_statistics,create_iam_role_for_dms_cloudwatch_logs,fetch_cloudwatch_logs_for_a_task,describe_endpoints,describe_db_log_files}]
+              [--task_arn TASK_ARN]
 
-```sh
-─
-╰─○ python3 dms_task_creator.py --create-tasks
-File ADMIN-JOB-HISTORY-1998-01-01-1999-12-31.json deleted
-File ADMIN-EMPLOYEES-1995-05-01.json deleted
-File ADMIN.all_tables.json deleted
-DMS task created for file: ADMIN-JOB-HISTORY-1998-01-01-1999-12-31.json
-DMS task created for file: ADMIN-EMPLOYEES-1995-05-01.json
-DMS task created for file: ADMIN.all_tables.json
-3 tasks have been created and ready
+optional arguments:
+  -h, --help            show this help message and exit
+  --profile PROFILE     AWS CLI Profile to be used
+  --region REGION       Region
+  --action {generate_json_files,create_dms_tasks,list_dms_tasks,delete_dms_tasks,start_dms_tasks,test_db_connection_from_replication_instance,describe_table_statistics,create_iam_role_for_dms_cloudwatch_logs,fetch_cloudwatch_logs_for_a_task,describe_endpoints,describe_db_log_files}
+                        Specify the action to be performed
+  --task_arn TASK_ARN   Specify the task arn
 ```
 
-```sh
-─
-╰─○ python3 dms_task_creator.py --list-tasks  
-arn:aws:dms:us-east-2:999999999999:task:YYY ready                                    
-arn:aws:dms:us-east-2:999999999999:task:ZZZ ready                                    
-arn:aws:dms:us-east-2:999999999999:task:XXX ready
-```
+### Actions
+Following are different types of actions the script supports.
 
-```sh
-─
-╰─○ python3 dms_task_creator.py --run-tasks  
-Task: arn:aws:dms:us-east-2:999999999999:task:XXX has been started
-Task: arn:aws:dms:us-east-2:999999999999:task:ZZZ has been started
-Task: arn:aws:dms:us-east-2:999999999999:task:YYY has been started
-3 tasks have been started
-```
-
-
-
-```sh
-─
-╰─○ python3 dms_task_creator.py --list-tasks 
-arn:aws:dms:us-east-2:999999999999:task:YYY starting                                 
-arn:aws:dms:us-east-2:999999999999:task:ZZZ starting                                 
-arn:aws:dms:us-east-2:999999999999:task:XXX starting                                 
-```
-```shell script
-─
-╰─○  python3 dms_task_creator.py --list-tasks
-arn:aws:dms:us-east-2:999999999999:task:YYY stopped                                  
-arn:aws:dms:us-east-2:999999999999:task:ZZZ stopped                                  
-arn:aws:dms:us-east-2:999999999999:task:XXX stopped                                  
-```
-
-```shell script
-─
-╰─○  python3 dms_task_creator.py --delete-tasks
-Task: arn:aws:dms:us-east-2:999999999999:task:XXX deletion in progress...
-Task: arn:aws:dms:us-east-2:999999999999:task:ZZZ deletion in progress...
-Task: arn:aws:dms:us-east-2:999999999999:task:YYY deletion in progress...
-3 tasks have been deleted!
-```
+Action | Description | Sample|
+--- | --- | --- | 
+`generate_json_files`|Generate DMS JSON Files|`python app.py --action generate_json_files`|
+`create_dms_tasks`|Create DMS Tasks|
+`list_dms_tasks`|List DMS Tasks|
+`delete_dms_tasks`|Delete DMS tasks|
+`start_dms_tasks`|Start DMS tasks|
+`test_db_connection_from_replication_instance`|Test DB Connections
+`describe_table_statistics`|Describe Table stats
+`create_iam_role_for_dms_cloudwatch_logs`|Creates IAM role needed by DMS to log
+`fetch_cloudwatch_logs_for_a_task`|Fetch Cloudwatch logs for the task|
+`describe_endpoints`|Describe DMS Endpoints|
+`describe_db_log_files`|Fetch DB Log files|
 ****
