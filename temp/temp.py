@@ -1,4 +1,3 @@
-task_settings = """
 {
     "TargetMetadata": {
         "TargetSchema": "",
@@ -16,7 +15,7 @@ task_settings = """
         "ParallelLoadQueuesPerThread": 0,
         "ParallelApplyThreads": 0,
         "ParallelApplyBufferSize": 0,
-        "ParallelApplyQueuesPerThread": 0
+        "ParallelApplyQueuesPerThread": 0,
     },
     "FullLoadSettings": {
         "TargetTablePrepMode": "TRUNCATE_BEFORE_LOAD",
@@ -25,90 +24,33 @@ task_settings = """
         "StopTaskCachedChangesNotApplied": false,
         "MaxFullLoadSubTasks": 8,
         "TransactionConsistencyTimeout": 600,
-        "CommitRate": 10000
+        "CommitRate": 10000,
     },
     "Logging": {
-        "EnableLogging": false,
+        "EnableLogging": true,
         "LogComponents": [
-            {
-                "Id": "DATA_STRUCTURE",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "COMMUNICATION",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "IO",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "COMMON",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "FILE_FACTORY",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "FILE_TRANSFER",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "REST_SERVER",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "ADDONS",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "TARGET_LOAD",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "TARGET_APPLY",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "SOURCE_UNLOAD",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "SOURCE_CAPTURE",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "TRANSFORMATION",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "SORTER",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "TASK_MANAGER",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "TABLES_MANAGER",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "METADATA_MANAGER",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "PERFORMANCE",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            },
-            {
-                "Id": "VALIDATOR_EXT",
-                "Severity": "LOGGER_SEVERITY_DEFAULT"
-            }
+            {"Id": "TRANSFORMATION", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "SOURCE_UNLOAD", "Severity": "LOGGER_SEVERITY_DETAILED_DEBUG"},
+            {"Id": "IO", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "TARGET_LOAD", "Severity": "LOGGER_SEVERITY_DETAILED_DEBUG"},
+            {"Id": "PERFORMANCE", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "SOURCE_CAPTURE", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "SORTER", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "REST_SERVER", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "VALIDATOR_EXT", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "TARGET_APPLY", "Severity": "LOGGER_SEVERITY_DETAILED_DEBUG"},
+            {"Id": "TASK_MANAGER", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "TABLES_MANAGER", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "METADATA_MANAGER", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "FILE_FACTORY", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "COMMON", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "ADDONS", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "DATA_STRUCTURE", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "COMMUNICATION", "Severity": "LOGGER_SEVERITY_DEFAULT"},
+            {"Id": "FILE_TRANSFER", "Severity": "LOGGER_SEVERITY_DEFAULT"},
         ],
-        "CloudWatchLogGroup": null,
-        "CloudWatchLogStream": null
+        "CloudWatchLogGroup": "dms-tasks-demo",
+        "CloudWatchLogStream": "dms-task-ZCWWDQOSVAZ2SSUL6ONRGVF7O344FRFOWOARRGQ",
     },
     "ControlTablesSettings": {
         "historyTimeslotInMinutes": 5,
@@ -116,17 +58,18 @@ task_settings = """
         "HistoryTimeslotInMinutes": 5,
         "HistoryTableEnabled": false,
         "SuspendedTablesTableEnabled": false,
-        "StatusTableEnabled": false
+        "StatusTableEnabled": false,
+        "FullLoadExceptionTableEnabled": false,
     },
     "StreamBufferSettings": {
         "StreamBufferCount": 3,
         "StreamBufferSizeInMB": 8,
-        "CtrlStreamBufferSizeInMB": 5
+        "CtrlStreamBufferSizeInMB": 5,
     },
     "ChangeProcessingDdlHandlingPolicy": {
         "HandleSourceTableDropped": true,
         "HandleSourceTableTruncated": true,
-        "HandleSourceTableAltered": true
+        "HandleSourceTableAltered": true,
     },
     "ErrorBehavior": {
         "DataErrorPolicy": "LOG_ERROR",
@@ -140,6 +83,7 @@ task_settings = """
         "RecoverableErrorInterval": 5,
         "RecoverableErrorThrottling": true,
         "RecoverableErrorThrottlingMax": 1800,
+        "RecoverableErrorStopRetryAfterThrottlingMax": true,
         "ApplyErrorDeletePolicy": "IGNORE_RECORD",
         "ApplyErrorInsertPolicy": "LOG_ERROR",
         "ApplyErrorUpdatePolicy": "LOG_ERROR",
@@ -148,7 +92,7 @@ task_settings = """
         "ApplyErrorFailOnTruncationDdl": false,
         "FullLoadIgnoreConflicts": true,
         "FailOnTransactionConsistencyBreached": false,
-        "FailOnNoTablesCaptured": false
+        "FailOnNoTablesCaptured": false,
     },
     "ChangeProcessingTuning": {
         "BatchApplyPreserveTransaction": true,
@@ -160,11 +104,12 @@ task_settings = """
         "CommitTimeout": 1,
         "MemoryLimitTotal": 1024,
         "MemoryKeepTime": 60,
-        "StatementCacheSize": 50
+        "StatementCacheSize": 50,
     },
     "PostProcessingRules": null,
     "CharacterSetSettings": null,
     "LoopbackPreventionSettings": null,
-    "BeforeImageSettings": null
+    "BeforeImageSettings": null,
+    "FailTaskWhenCleanTaskResourceFailed": false,
+    "TTSettings": null,
 }
-"""

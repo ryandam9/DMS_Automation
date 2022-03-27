@@ -1,0 +1,31 @@
+{
+    "ReplicationTask": {
+        "ReplicationTaskIdentifier": "ot-all-tables-2022-03-20-17-39-45",
+        "SourceEndpointArn": "arn:aws:dms:us-east-2:317460704610:endpoint:TZGVBMPKWFKIL473B6RINNYJPUTXBVLAV2GSHLQ",
+        "TargetEndpointArn": "arn:aws:dms:us-east-2:317460704610:endpoint:4I6ADULFGTZXZOBIZBDQYFGITJHR7ST5E3AMYWQ",
+        "ReplicationInstanceArn": "arn:aws:dms:us-east-2:317460704610:rep:BF25BSHXHC7DQ73MXESH2LVUASATCYADAIS25BY",
+        "MigrationType": "full-load",
+        "TableMappings": "{"rules": [{"rule-type": "selection", "rule-id": 6, "rule-name": 6, "object-locator": {"schema-name": "OT", "table-name": "CONTACTS"}, "rule-action": "include"}, {"rule-type": "transformation", "rule-id": "3", "rule-name": "convert-schemas-to-lower", "rule-action": "convert-lowercase", "rule-target": "schema", "object-locator": {"schema-name": "%"}}, {"rule-type": "transformation", "rule-id": "4", "rule-name": "convert-tables-to-lower", "rule-action": "convert-lowercase", "rule-target": "table", "object-locator": {"schema-name": "%", "table-name": "%"}}, {"rule-type": "transformation", "rule-id": "5", "rule-name": "convert-columns-to-lowercase", "rule-action": "convert-lowercase", "rule-target": "column", "object-locator": {"schema-name": "%", "table-name": "%", "column-name": "%"}}]}",
+        "ReplicationTaskSettings": "{"TargetMetadata":{"TargetSchema":"","SupportLobs":true,"FullLobMode":false,"LobChunkSize":0,"LimitedSizeLobMode":true,"LobMaxSize":32,"InlineLobMaxSize":0,"LoadMaxFileSize":0,"ParallelLoadThreads":0,"ParallelLoadBufferSize":0,"BatchApplyEnabled":false,"TaskRecoveryTableEnabled":false,"ParallelLoadQueuesPerThread":0,"ParallelApplyThreads":0,"ParallelApplyBufferSize":0,"ParallelApplyQueuesPerThread":0},"FullLoadSettings":{"TargetTablePrepMode":"TRUNCATE_BEFORE_LOAD","CreatePkAfterFullLoad":false,"StopTaskCachedChangesApplied":false,"StopTaskCachedChangesNotApplied":false,"MaxFullLoadSubTasks":8,"TransactionConsistencyTimeout":600,"CommitRate":10000},"Logging":{"EnableLogging":false,"LogComponents":[{"Id":"TRANSFORMATION","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"SOURCE_UNLOAD","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"IO","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"TARGET_LOAD","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"PERFORMANCE","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"SOURCE_CAPTURE","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"SORTER","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"REST_SERVER","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"VALIDATOR_EXT","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"TARGET_APPLY","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"TASK_MANAGER","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"TABLES_MANAGER","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"METADATA_MANAGER","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"FILE_FACTORY","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"COMMON","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"ADDONS","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"DATA_STRUCTURE","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"COMMUNICATION","Severity":"LOGGER_SEVERITY_DEFAULT"},{"Id":"FILE_TRANSFER","Severity":"LOGGER_SEVERITY_DEFAULT"}],"CloudWatchLogGroup":null,"CloudWatchLogStream":null},"ControlTablesSettings":{"historyTimeslotInMinutes":5,"ControlSchema":"","HistoryTimeslotInMinutes":5,"HistoryTableEnabled":false,"SuspendedTablesTableEnabled":false,"StatusTableEnabled":false,"FullLoadExceptionTableEnabled":false},"StreamBufferSettings":{"StreamBufferCount":3,"StreamBufferSizeInMB":8,"CtrlStreamBufferSizeInMB":5},"ChangeProcessingDdlHandlingPolicy":{"HandleSourceTableDropped":true,"HandleSourceTableTruncated":true,"HandleSourceTableAltered":true},"ErrorBehavior":{"DataErrorPolicy":"LOG_ERROR","DataTruncationErrorPolicy":"LOG_ERROR","DataErrorEscalationPolicy":"SUSPEND_TABLE","DataErrorEscalationCount":0,"TableErrorPolicy":"SUSPEND_TABLE","TableErrorEscalationPolicy":"STOP_TASK","TableErrorEscalationCount":0,"RecoverableErrorCount":-1,"RecoverableErrorInterval":5,"RecoverableErrorThrottling":true,"RecoverableErrorThrottlingMax":1800,"RecoverableErrorStopRetryAfterThrottlingMax":true,"ApplyErrorDeletePolicy":"IGNORE_RECORD","ApplyErrorInsertPolicy":"LOG_ERROR","ApplyErrorUpdatePolicy":"LOG_ERROR","ApplyErrorEscalationPolicy":"LOG_ERROR","ApplyErrorEscalationCount":0,"ApplyErrorFailOnTruncationDdl":false,"FullLoadIgnoreConflicts":true,"FailOnTransactionConsistencyBreached":false,"FailOnNoTablesCaptured":false},"ChangeProcessingTuning":{"BatchApplyPreserveTransaction":true,"BatchApplyTimeoutMin":1,"BatchApplyTimeoutMax":30,"BatchApplyMemoryLimit":500,"BatchSplitSize":0,"MinTransactionSize":1000,"CommitTimeout":1,"MemoryLimitTotal":1024,"MemoryKeepTime":60,"StatementCacheSize":50},"PostProcessingRules":null,"CharacterSetSettings":null,"LoopbackPreventionSettings":null,"BeforeImageSettings":null,"FailTaskWhenCleanTaskResourceFailed":false,"TTSettings":null}",
+        "Status": "creating",
+        "ReplicationTaskCreationDate": datetime.datetime(2022,
+        3,
+        20,
+        17,
+        39,
+        47,
+        116000, tzinfo=tzlocal()),
+        "ReplicationTaskArn": "arn:aws:dms:us-east-2:317460704610:task:NXOCYS2XQ2JLXOZXHEZUX3YXILMOJ3JBI6AWBOI"
+    },
+    "ResponseMetadata": {
+        "RequestId": "5653fc24-f018-4b6e-9b4f-84a4191a21ca",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "x-amzn-requestid": "5653fc24-f018-4b6e-9b4f-84a4191a21ca",
+            "content-type": "application/x-amz-json-1.1",
+            "content-length": "5469",
+            "date": "Sun, 20 Mar 2022 06:39:46 GMT"
+        },
+        "RetryAttempts": 0
+    }
+}

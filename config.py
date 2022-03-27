@@ -1,6 +1,0 @@
-csv_files_location = '.'
-replication_task_settings = 'task_settings.json'
-replication_instance_arn = ''
-source_endpoint_arn = ''
-target_endpoint_arn = ''
-sns_topic_arn = ''
