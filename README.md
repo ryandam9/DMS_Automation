@@ -62,7 +62,7 @@ Action | Description | Sample|
 `test_db_connection_from_replication_instance`|Test DB Connections
 `describe_table_statistics`|Describe Table stats
 `create_iam_role_for_dms_cloudwatch_logs`|Creates IAM role needed by DMS to log
-`fetch_cloudwatch_logs_for_a_task`|Fetch Cloudwatch logs for the task|
+`fetch_cloudwatch_logs_for_a_task`|Fetch Cloudwatch logs for the task|`python app.py --action fetch_cloudwatch_logs_for_a_task --task_arn <task_run>`
 `describe_endpoints`|Describe DMS Endpoints|
 `describe_db_log_files`|Fetch DB Log files|
 ****
