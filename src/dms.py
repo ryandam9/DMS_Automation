@@ -599,8 +599,8 @@ def describe_db_log_files(profile, region):
             response = rds.describe_db_log_files(
                 DBInstanceIdentifier=db_id,
             )
-
-            for log_file in response["DescribeDBLogFiles"][-1 * DB_LOG_FILE_COUNT : -1]:
+            
+            for log_file in response["DescribeDBLogFiles"][:-1-1 * DB_LOG_FILE_COUNT : -1]:
                 resp = rds.download_db_log_file_portion(
                     DBInstanceIdentifier=db_id,
                     LogFileName=log_file["LogFileName"],

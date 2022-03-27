@@ -44,7 +44,6 @@ profiles = get_aws_cli_profile()
 
 icon = "->"
 
-
 ## PROFILE
 if args.profile:
     print(f"{icon} Profile specified: {args.profile}")
@@ -80,8 +79,8 @@ if args.action is None:
     parser.print_help(sys.stderr)
     sys.exit(1)
 
+## Process the Input CSV Files & generate JSON Configurations
 if args.action == "generate_json_files":
-    ## Process the Input CSV Files & generate JSON Configurations
     process_input_files()
 
 if args.action == "create_dms_tasks":
