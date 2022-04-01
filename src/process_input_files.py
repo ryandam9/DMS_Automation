@@ -3,21 +3,23 @@ import json
 import os
 
 from config import csv_files_location, json_files_location
-from utils import (convert_columns_to_lowercase, convert_schemas_to_lowercase,
-                   convert_tables_to_lowercase)
+from utils import (
+    convert_columns_to_lowercase,
+    convert_schemas_to_lowercase,
+    convert_tables_to_lowercase,
+)
 
 # ------------------------------------------------------------------------------------------------#
 # Create named tuples to hold Table, and filter attributes                                        #
 # ------------------------------------------------------------------------------------------------#
 # Each table should be associated with a schema. Table will have filters applied to it.
-Table = collections.namedtuple('Table',
-                               'schema, table, filters, auto_partitioned')
+Table = collections.namedtuple("Table", "schema, table, filters, auto_partitioned")
 
 # Each filter is composed of three attributes
 #  1. Column name
 #  2. Operator name (eq, ste, gte, between)
 #  3. Filter value (Note - In case of between, two values are needed. They should be separated with "~")
-Filter = collections.namedtuple('Filter', 'column, operator, value')
+Filter = collections.namedtuple("Filter", "column, operator, value")
 
 # holds tables that have filter conditions
 filter_tables = []
@@ -29,7 +31,7 @@ non_filter_tables = {}
 
 def delete_json_files():
     """
-     Deletes json files in "json_files" directory.
+    Deletes json files in "json_files" directory.
     """
     for file in os.listdir(json_files_location):
         os.remove(os.path.join(json_files_location, file))
@@ -37,8 +39,8 @@ def delete_json_files():
 
 
 def process_input_files():
-    print('-' * 100)
-    
+    print("-" * 100)
+
     # Identify the CSV files and process them
     for file in os.listdir(csv_files_location):
         file_full_path = os.path.join(csv_files_location, file)
@@ -48,18 +50,18 @@ def process_input_files():
         elif file.startswith("exclude"):
             process_csv_file(file_full_path, "exclude")
 
-    print('All CSV files have been read.')
-    print('-' * 100)
+    print("All CSV files have been read.")
+    print("-" * 100)
 
-    delete_json_files()   
+    delete_json_files()
 
     # Generate JSON Files
     create_tasks_for_filter_tables(filter_tables)
 
     create_tasks_for_no_filter_tables(non_filter_tables)
 
-    print('JSON files have been generated.')
-    print('-' * 100)
+    print("JSON files have been generated.")
+    print("-" * 100)
 
 
 def process_csv_file(csv_file, action):
@@ -74,7 +76,7 @@ def process_csv_file(csv_file, action):
     print(f"Processing file: {csv_file}")
     counter = 0
 
-    with open(csv_file, 'r') as in_file:
+    with open(csv_file, "r") as in_file:
         for line in in_file:
             counter += 1
             decision = ""
@@ -82,25 +84,26 @@ def process_csv_file(csv_file, action):
             # Following cases fall into this category.
             #  1. Table with no filter conditions
             #  2. All tables in a schema (E.g., HR,%)
-            if len(line.split(',')) == 2:
-                schema, table = line.split(',')
+            if len(line.split(",")) == 2:
+                schema, table = line.split(",")
 
                 # Remove any special chars
                 schema = schema.strip()
-                table = table.strip('\n').strip()
-                table_obj = Table(schema=schema,
-                                  table=table,
-                                  filters=[],
-                                  auto_partitioned=False)
+                table = table.strip("\n").strip()
+                table_obj = Table(
+                    schema=schema, table=table, filters=[], auto_partitioned=False
+                )
 
                 add_to_non_filter_tables(schema, table_obj)
                 decsion = "No Filter conditions"
 
             # These are the tables with filter conditions.
-            if len(line.split(',')) > 3:
-                cols = line.split(',')
-                schema, table = cols[0], cols[
-                    1]  # First two positions have schema, table respectively.
+            if len(line.split(",")) > 3:
+                cols = line.split(",")
+                schema, table = (
+                    cols[0],
+                    cols[1],
+                )  # First two positions have schema, table respectively.
 
                 schema = schema.strip()
                 table = table.strip()
@@ -113,53 +116,53 @@ def process_csv_file(csv_file, action):
                 filters = list()
 
                 for i in range(0, int(filter_count)):
-                    column, operator, value = cols[index], cols[index +
-                                                                1], cols[index
-                                                                         + 2]
+                    column, operator, value = (
+                        cols[index],
+                        cols[index + 1],
+                        cols[index + 2],
+                    )
 
                     column = column.strip()
                     operator = operator.strip()
-                    value = value.strip('\n').strip()
+                    value = value.strip("\n").strip()
 
                     # Store the filter details in a named table.
-                    filter_condition = Filter(column=column,
-                                              operator=operator,
-                                              value=value)
+                    filter_condition = Filter(
+                        column=column, operator=operator, value=value
+                    )
                     filters.append(filter_condition)
 
                     # Add the index to process next filter condition.
                     index += 3
 
                 # Create a Table object.
-                table_obj = Table(schema=schema,
-                                  table=table,
-                                  filters=filters,
-                                  auto_partitioned=False)
-                
+                table_obj = Table(
+                    schema=schema, table=table, filters=filters, auto_partitioned=False
+                )
+
                 filter_tables.append(table_obj)
                 decsion = "Filter conditions"
 
             # If an entry has exactly 3 columns, at this point, it is assumed that the 3rd column
             # specifies "partition-auto" specified. This condition needs to be revisited in case more
             # scenarios need to be handled in future.
-            if len(line.split(',')) == 3:
-                schema, table, auto_partition_flag = line.split(',')
-                table_obj = Table(schema=schema,
-                                  table=table,
-                                  filters=[],
-                                  auto_partitioned=True)
+            if len(line.split(",")) == 3:
+                schema, table, auto_partition_flag = line.split(",")
+                table_obj = Table(
+                    schema=schema, table=table, filters=[], auto_partitioned=True
+                )
                 add_to_non_filter_tables(schema, table_obj)
 
                 decsion = "No Filter conditions & Auto Partition"
 
             print(f"{counter} - {line.strip()} - {decsion}")
 
-    print("\n")        
+    print("\n")
 
 
 def add_to_non_filter_tables(schema, obj):
     """
-     Adds a table object to the dict.
+    Adds a table object to the dict.
     """
 
     # Create an entry for the schema.
@@ -186,11 +189,11 @@ def create_tasks_for_no_filter_tables(tables):
 
     for schema in schemas:
         data = dict()
-        data['rules'] = []
-        file_name = schema.lower() + '.all_tables.json'
+        data["rules"] = []
+        file_name = schema.lower() + ".all_tables.json"
 
         for table in tables[schema]:
-            print('Processing table: {}.{}'.format(table.schema, table.table))
+            print("Processing table: {}.{}".format(table.schema, table.table))
             index += 1
 
             entry = {
@@ -199,7 +202,7 @@ def create_tasks_for_no_filter_tables(tables):
                 "rule-name": index,
                 "object-locator": {
                     "schema-name": table.schema,
-                    "table-name": table.table
+                    "table-name": table.table,
                 },
                 "rule-action": "include",
             }
@@ -207,16 +210,16 @@ def create_tasks_for_no_filter_tables(tables):
             # If the table is specified to have have "partitions-auto" in the input csv file
             # create this entry.
             if table.auto_partitioned:
-                entry['parallel-load'] = {"type": "partitions-auto"}
+                entry["parallel-load"] = {"type": "partitions-auto"}
 
-            data['rules'].append(entry)
+            data["rules"].append(entry)
 
         # Add a Transformation
-        data['rules'].append(convert_schemas_to_lowercase())
-        data['rules'].append(convert_tables_to_lowercase())
-        data['rules'].append(convert_columns_to_lowercase())
+        data["rules"].append(convert_schemas_to_lowercase())
+        data["rules"].append(convert_tables_to_lowercase())
+        data["rules"].append(convert_columns_to_lowercase())
 
-        with open(os.path.join(json_files_location, file_name), 'w') as fp:
+        with open(os.path.join(json_files_location, file_name), "w") as fp:
             json.dump(data, fp)
 
 
@@ -230,23 +233,20 @@ def create_tasks_for_filter_tables(tables):
 
     for table in tables:
         data = dict()
-        data['rules'] = []
+        data["rules"] = []
 
-        print('Processing table: {}.{}'.format(table.schema, table.table))
+        print("Processing table: {}.{}".format(table.schema, table.table))
         index += 1
 
         entry = {
             "rule-type": "selection",
             "rule-id": index,
             "rule-name": index,
-            "object-locator": {
-                "schema-name": table.schema,
-                "table-name": table.table
-            },
+            "object-locator": {"schema-name": table.schema, "table-name": table.table},
             "rule-action": "include",
         }
 
-        part_of_filename = ''
+        part_of_filename = ""
 
         # Generate filter conditions
         filter_conditions = []
@@ -257,9 +257,9 @@ def create_tasks_for_filter_tables(tables):
 
             condition = {}
 
-            if operator == 'between':
-                lower, upper = value.split('~')
-                upper = upper.strip('\n').strip()
+            if operator == "between":
+                lower, upper = value.split("~")
+                upper = upper.strip("\n").strip()
 
                 condition = {
                     "filter-operator": operator,
@@ -268,7 +268,7 @@ def create_tasks_for_filter_tables(tables):
                 }
 
                 if len(part_of_filename) == 0:
-                    part_of_filename = lower + '-' + upper
+                    part_of_filename = lower + "-" + upper
             else:
                 condition = {"filter-operator": operator, "value": value}
 
@@ -278,21 +278,21 @@ def create_tasks_for_filter_tables(tables):
             filter_condition = {
                 "filter-type": "source",
                 "column-name": column,
-                "filter-conditions": [condition]
+                "filter-conditions": [condition],
             }
 
             filter_conditions.append(filter_condition)
 
-        entry['filters'] = filter_conditions
-        data['rules'].append(entry)
+        entry["filters"] = filter_conditions
+        data["rules"].append(entry)
 
         # Add a Transformation
-        data['rules'].append(convert_schemas_to_lowercase())
-        data['rules'].append(convert_tables_to_lowercase())
-        data['rules'].append(convert_columns_to_lowercase())
+        data["rules"].append(convert_schemas_to_lowercase())
+        data["rules"].append(convert_tables_to_lowercase())
+        data["rules"].append(convert_columns_to_lowercase())
 
         file_name = "f{table.schema}-{table.table}-{part_of_filename}.json"
-        file_name = file_name.replace('_', '-').lower()
+        file_name = file_name.replace("_", "-").lower()
 
-        with open(os.path.join(json_files_location, file_name), 'w') as fp:
+        with open(os.path.join(json_files_location, file_name), "w") as fp:
             json.dump(data, fp)

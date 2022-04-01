@@ -1,0 +1,3 @@
+cx_Oracle
+tabulate
+import psycopg2

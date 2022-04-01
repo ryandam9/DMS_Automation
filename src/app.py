@@ -6,7 +6,8 @@ from config import DEFAULT_REGION
 from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
                  delete_dms_tasks, describe_db_log_files, describe_endpoints,
                  describe_table_statistics, fetch_cloudwatch_logs_for_a_task,
-                 list_dms_tasks, start_dms_tasks, test_db_connection)
+                 list_dms_tasks, start_dms_tasks, test_db_connection,
+                 validate_source_target_structures)
 from process_input_files import process_input_files
 from utils import get_aws_cli_profile
 
@@ -29,6 +30,8 @@ actions = [
     "fetch_cloudwatch_logs_for_a_task",
     "describe_endpoints",
     "describe_db_log_files",
+    "validate_source_target_structures",
+    "validate_source_target_data",
 ]
 
 parser.add_argument(
@@ -36,6 +39,7 @@ parser.add_argument(
 )
 
 parser.add_argument("--task_arn", help="Specify the task arn", type=str)
+parser.add_argument("--table_name", help="Specify schema & table name", type=str)
 
 args = parser.parse_args()
 
@@ -108,7 +112,7 @@ if args.action == "fetch_cloudwatch_logs_for_a_task":
     if args.task_arn is None:
         print("** Please specify the task arn **")
         print("... --action fetch_cloudwatch_logs_for_a_task --task_arn XXX")
-    else:    
+    else:
         fetch_cloudwatch_logs_for_a_task(args.profile, args.region, args.task_arn)
 
 if args.action == "describe_endpoints":
@@ -116,3 +120,13 @@ if args.action == "describe_endpoints":
 
 if args.action == "describe_db_log_files":
     describe_db_log_files(args.profile, args.region)
+
+if args.action == "validate_source_target_structures":
+    if args.table_name is None:
+        print("** Please specify a table name in <SCHEMA.TABLE NAME> format**")
+        print("... --action validate_source_target_structures --table_name OT.REGIONS")        
+    else:
+        validate_source_target_structures(args.profile, args.region, args.table_name)
+
+if args.action == "validate_source_target_data":
+    validate_source_target_structures(args.profile, args.region)

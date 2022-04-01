@@ -1,19 +1,20 @@
-import ast
 import json
 import os
 import re
 import sys
 import textwrap
 from datetime import datetime
-from email import header
 
 import boto3
+import openpyxl
 from tabulate import tabulate
 
 from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
                     TARGET_DB_ID, json_files_location,
                     replication_instance_arn, sns_topic_arn,
                     source_endpoint_arn, target_endpoint_arn, task_arn_file)
+from databases.oracle import oracle_table_metadata
+from databases.postgres import postgres_table_metadata
 from task_settings import task_settings
 
 
@@ -515,7 +516,7 @@ def fetch_cloudwatch_logs_for_a_task(profile, region, task_arn):
         print(error)
 
 
-def describe_endpoints(profile, region):
+def describe_endpoints(profile, region, print_result=True):
     """ """
     try:
         session = boto3.Session(profile_name=profile, region_name=region)
@@ -555,22 +556,23 @@ def describe_endpoints(profile, region):
                 ]
             )
 
-        print(
-            tabulate(
-                result,
-                headers=[
-                    "Endpoint_ID",
-                    "Type",
-                    "Database",
-                    "Server",
-                    "DB",
-                    "Port",
-                    "User",
-                    "Extra Attributes",
-                ],
-                tablefmt="fancy_grid",
+        if print_result:
+            print(
+                tabulate(
+                    result,
+                    headers=[
+                        "Endpoint_ID",
+                        "Type",
+                        "Database",
+                        "Server",
+                        "DB",
+                        "Port",
+                        "User",
+                        "Extra Attributes",
+                    ],
+                    tablefmt="fancy_grid",
+                )
             )
-        )
 
         # print(json.dumps(response, indent=4, sort_keys=True, default=str))
         return result
@@ -596,28 +598,37 @@ def describe_db_log_files(profile, region):
         def fetch_log_file(db_id):
             result = []
 
-            response = rds.describe_db_log_files(
-                DBInstanceIdentifier=db_id,
-            )
-            
-            for log_file in response["DescribeDBLogFiles"][:-1-1 * DB_LOG_FILE_COUNT : -1]:
-                resp = rds.download_db_log_file_portion(
+            try:
+                response = rds.describe_db_log_files(
                     DBInstanceIdentifier=db_id,
-                    LogFileName=log_file["LogFileName"],
                 )
 
-                for line in resp["LogFileData"].split("\n"):
-                    result.append(
-                        [
-                            db_id,
-                            log_file["LogFileName"],
-                            "\n".join(
-                                textwrap.wrap(
-                                    line, width=150, replace_whitespace=False
-                                ),
-                            ),
-                        ],
+                for log_file in response["DescribeDBLogFiles"][
+                    : -1 - 1 * DB_LOG_FILE_COUNT : -1
+                ]:
+                    resp = rds.download_db_log_file_portion(
+                        DBInstanceIdentifier=db_id,
+                        LogFileName=log_file["LogFileName"],
                     )
+
+                    for line in resp["LogFileData"].split("\n"):
+                        result.append(
+                            [
+                                db_id,
+                                log_file["LogFileName"],
+                                "\n".join(
+                                    textwrap.wrap(
+                                        line, width=150, replace_whitespace=False
+                                    ),
+                                ),
+                            ],
+                        )
+            except Exception as error:
+                print(
+                    f"** Something went wrong while fetching DB Logs for DB Instance: {db_id} **"
+                )
+                print("IS THE DB INSTANCE NAME CORRECT ??")
+                print(error)
 
             return result
 
@@ -630,3 +641,93 @@ def describe_db_log_files(profile, region):
     except Exception as error:
         print("** Something went wrong while getting DB Logs. **")
         print(error)
+
+
+def get_source_db_connection(profile, region):
+    endpoints = describe_endpoints(profile, region)
+
+    # Source endpoint
+    db_engine = endpoints[0][2]
+    host = endpoints[0][3]
+    db = endpoints[0][4]
+    port = endpoints[0][5]
+    user = endpoints[0][6]
+
+    # Fetch DB Password from AWS Secrets Manager
+    password = ""
+
+    return {
+        "host": host,
+        "port": port,
+        "service": db,
+        "user": "admin",
+        "password": password,
+    }
+
+
+def get_target_db_connection(profile, region):
+    endpoints = describe_endpoints(profile, region, print_result=False)
+
+    # Target endpoint
+    db_engine = endpoints[1][2]
+    host = endpoints[1][3]
+    db = endpoints[1][4]
+    port = endpoints[1][5]
+    user = endpoints[1][6]
+
+    # Fetch DB Password from AWS Secrets Manager
+    password = ""
+
+    return {
+        "host": host,
+        "port": port,
+        "service": db,
+        "user": user,
+        "password": password,
+    }
+
+
+def validate_source_target_structures(profile, region, table_name):
+    """
+    Validate Source and Target DB structures
+    """
+    schema = table_name.split(".")[0]
+    table = table_name.split(".")[1]
+
+    source_config = get_source_db_connection(profile, region)
+
+    # Get Metadata from Source DB
+    source_metadata = oracle_table_metadata(source_config, schema, table)
+
+    target_config = get_target_db_connection(profile, region)
+
+    # Get Metadata from Target DB
+    target_metadata = postgres_table_metadata(target_config, schema, table)
+
+
+    wb = openpyxl.Workbook()
+    sheet = wb['Sheet']              # Default sheet name is 'Sheet'
+    sheet.title = 'structure_comparison'
+    sheet.sheet_properties.tabColor = "1072BA"
+
+    current_time = (
+            datetime.now()
+            .strftime("%Y-%m-%d %H:%M")
+            .replace(" ", "-")
+            .replace(":", "-")
+        )
+
+    target_file = '../table_structure_comparison/structure_comparison' + '_' + current_time + '.xlsx'
+
+    for i in range(len(source_metadata)):
+        for j in range(len(source_metadata[i])):
+            sheet.cell(row=i+1, column=j+1).value = source_metadata[i][j]
+        
+        k = len(source_metadata[i]) + 1
+
+        for j in range(len(target_metadata[i])):
+            sheet.cell(row=i+1, column= k + j + 1).value = target_metadata[i][j]        
+
+        #sheet.cell(row=i, column=1).value = 'Hello World'
+
+    wb.save(target_file)
