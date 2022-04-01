@@ -37,16 +37,23 @@ python app.py -h
 
 ```
 usage: app.py [-h] [--profile PROFILE] [--region REGION]
-              [--action {generate_json_files,create_dms_tasks,list_dms_tasks,delete_dms_tasks,start_dms_tasks,test_db_connection_from_replication_instance,describe_table_statistics,create_iam_role_for_dms_cloudwatch_logs,fetch_cloudwatch_logs_for_a_task,describe_endpoints,describe_db_log_files}]
-              [--task_arn TASK_ARN]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --profile PROFILE     AWS CLI Profile to be used
-  --region REGION       Region
-  --action {generate_json_files,create_dms_tasks,list_dms_tasks,delete_dms_tasks,start_dms_tasks,test_db_connection_from_replication_instance,describe_table_statistics,create_iam_role_for_dms_cloudwatch_logs,fetch_cloudwatch_logs_for_a_task,describe_endpoints,describe_db_log_files}
-                        Specify the action to be performed
-  --task_arn TASK_ARN   Specify the task arn
+              [--action {
+                  generate_json_files,
+                  create_dms_tasks,
+                  list_dms_tasks,
+                  delete_dms_tasks,
+                  start_dms_tasks,
+                  test_db_connection_from_replication_instance,
+                  describe_table_statistics,
+                  create_iam_role_for_dms_cloudwatch_logs,
+                  fetch_cloudwatch_logs_for_a_task,
+                  describe_endpoints,
+                  describe_db_log_files,
+                  validate_source_target_structures,
+                  validate_source_target_data
+                  }
+              ]
+              [--task_arn TASK_ARN] [--table_name TABLE_NAME]
 ```
 
 ### Actions
