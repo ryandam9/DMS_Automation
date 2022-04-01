@@ -151,4 +151,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-table_structure_comparison/
+table_structure_validation/
+data_validation/

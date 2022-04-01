@@ -1,6 +1,8 @@
 postgres_queries = {}
 
-postgres_queries['get_table_ddl'] = """
+postgres_queries[
+    "get_table_ddl"
+] = """
 SELECT 
     table_schema
   , table_name

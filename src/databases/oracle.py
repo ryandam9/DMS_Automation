@@ -7,11 +7,11 @@ from .oracle_queries import oracle_queries
 
 
 def oracle_get_connection(config):
-    host = config['host']    
-    port = config['port']
-    service = config['service']
-    user = config['user']
-    password = config['password']
+    host = config["host"]
+    port = config["port"]
+    service = config["service"]
+    user = config["user"]
+    password = config["password"]
 
     try:
         dsn = cx_Oracle.makedsn(host, port, service_name=service)
@@ -22,7 +22,7 @@ def oracle_get_connection(config):
         print(f"{host}:{port}/{service}:{user}")
         sys.exit(1)
 
-    
+
 def oracle_execute_query(config, query, parameters):
     """
     Executes given SQL query.
@@ -55,11 +55,13 @@ def oracle_execute_query(config, query, parameters):
             # Converting all types to Char so that, when preparing JSON format, there won't be any
             # errors.
             for i in range(len(record)):
-                string_value = ''
+                string_value = ""
                 try:
-                    string_value = str(record[i]) if record[i] is not None else ''
+                    string_value = str(record[i]) if record[i] is not None else ""
                 except Exception as error:
-                    print('Unable to convert value to String; value: {}'.format(record[i]))
+                    print(
+                        "Unable to convert value to String; value: {}".format(record[i])
+                    )
 
                 rec.append(string_value)
             records.append(rec)
@@ -73,18 +75,16 @@ def oracle_execute_query(config, query, parameters):
     finally:
         connection.close()
 
-    return records    
+    return records
 
 
-def oracle_table_metadata(config, schema, table):
-    query = oracle_queries['get_table_ddl']
+def oracle_table_metadata(config, schema, table, print_result=False):
+    query = oracle_queries["get_table_ddl"]
     query_result = oracle_execute_query(config, query, parameters=[schema, table])
 
-    print(tabulate(query_result[1:], headers=query_result[0], tablefmt="fancy_grid"))
+    if print_result:
+        print(
+            tabulate(query_result[1:], headers=query_result[0], tablefmt="fancy_grid")
+        )
 
     return query_result
-
-
-
-
-

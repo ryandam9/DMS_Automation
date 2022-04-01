@@ -1,6 +1,8 @@
 oracle_queries = {}
 
-oracle_queries['get_table_ddl'] = """
+oracle_queries[
+    "get_table_ddl"
+] = """
 SELECT 
     OWNER
   , TABLE_NAME

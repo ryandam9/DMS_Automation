@@ -1,5 +1,8 @@
 import os
+from datetime import datetime
 from pathlib import Path
+
+import openpyxl
 
 
 def convert_schemas_to_lowercase():
@@ -57,3 +60,32 @@ def get_aws_cli_profile():
                 profiles.append(aws_cli_profile_name)
 
     return profiles
+
+
+def write_to_excel_file(list1, list2):
+    wb = openpyxl.Workbook()
+    sheet = wb['Sheet']              # Default sheet name is 'Sheet'
+    sheet.title = 'structure_comparison'
+    sheet.sheet_properties.tabColor = "1072BA"
+
+    current_time = (
+            datetime.now()
+            .strftime("%Y-%m-%d %H:%M")
+            .replace(" ", "-")
+            .replace(":", "-")
+        )
+
+    target_file = '../table_structure_validation/structure_comparison' + '_' + current_time + '.xlsx'
+
+    for i in range(len(list1)):
+        for j in range(len(list1[i])):
+            sheet.cell(row=i, column=j+1).value = list1[i][j]
+        
+        k = len(list1[i]) + 1
+
+        for j in range(len(list2[i])):
+            sheet.cell(row=i, column= k + j + 1).value = list2[i][j]        
+
+    wb.save(target_file)
+
+    print(f"Data written to excel file: {target_file}")

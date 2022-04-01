@@ -6,16 +6,25 @@ import textwrap
 from datetime import datetime
 
 import boto3
-import openpyxl
 from tabulate import tabulate
 
-from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
-                    TARGET_DB_ID, json_files_location,
-                    replication_instance_arn, sns_topic_arn,
-                    source_endpoint_arn, target_endpoint_arn, task_arn_file)
+from config import (
+    DB_LOG_FILE_COUNT,
+    MAX_TASKS_PER_PAGE,
+    SOURCE_DB_ID,
+    TARGET_DB_ID,
+    csv_files_location,
+    json_files_location,
+    replication_instance_arn,
+    sns_topic_arn,
+    source_endpoint_arn,
+    target_endpoint_arn,
+    task_arn_file,
+)
 from databases.oracle import oracle_table_metadata
 from databases.postgres import postgres_table_metadata
 from task_settings import task_settings
+from utils import write_to_excel_file
 
 
 def create_dms_tasks(profile, region):
@@ -516,7 +525,7 @@ def fetch_cloudwatch_logs_for_a_task(profile, region, task_arn):
         print(error)
 
 
-def describe_endpoints(profile, region, print_result=True):
+def describe_endpoints(profile, region, print_result=False):
     """ """
     try:
         session = boto3.Session(profile_name=profile, region_name=region)
@@ -654,9 +663,10 @@ def get_source_db_connection(profile, region):
     user = endpoints[0][6]
 
     # Fetch DB Password from AWS Secrets Manager
-    password = ""
+    password = "admin123"
 
     return {
+        "db_engine": db_engine,
         "host": host,
         "port": port,
         "service": db,
@@ -676,9 +686,10 @@ def get_target_db_connection(profile, region):
     user = endpoints[1][6]
 
     # Fetch DB Password from AWS Secrets Manager
-    password = ""
+    password = "demo1234"
 
     return {
+        "db_engine": db_engine,
         "host": host,
         "port": port,
         "service": db,
@@ -687,47 +698,76 @@ def get_target_db_connection(profile, region):
     }
 
 
-def validate_source_target_structures(profile, region, table_name):
+def validate_source_target_structures_all(profile, region):
+    """
+    Validate Source and Target DB structures
+    """
+
+    tables_migrated = []
+
+    # Read the Input CSV Files & gather a list of Schemas and tables
+    # that are being migrated.
+    for file in os.listdir(csv_files_location):
+        file_full_path = os.path.join(csv_files_location, file)
+
+        if file.startswith("include"):
+            print(f"Reading {file}")
+
+            with open(file_full_path, "r") as f:
+                for line in f:
+                    schema, table = line.split(",")[0], line.split(",")[1]
+
+                    schema = schema.strip().upper()
+                    table = table.strip().upper()
+
+                    tables_migrated.append({"schema": schema, "table": table})
+
+    source_metadata = [[]]
+    target_metadata = [[]]
+
+    # Extract Table metadata for these tables from both Source & Target tables.
+    for index, table in enumerate(tables_migrated):
+
+        src_meta, tgt_meta = validate_source_target_structures(
+            profile, region, table["schema"] + "." + table["table"]
+        )
+
+        if index == 0:
+            source_metadata.extend(src_meta)
+            target_metadata.extend(tgt_meta)
+        else:
+            source_metadata.extend(src_meta[1:])
+            target_metadata.extend(tgt_meta[1:])
+
+    # Write the metadata to a CSV file.
+    write_to_excel_file(source_metadata, target_metadata)
+
+
+def validate_source_target_structures(
+    profile, region, table_name, write_to_excel=False
+):
     """
     Validate Source and Target DB structures
     """
     schema = table_name.split(".")[0]
     table = table_name.split(".")[1]
+    print(f"Gathering metadata for table: [{schema}.{table}]")
 
     source_config = get_source_db_connection(profile, region)
-
-    # Get Metadata from Source DB
-    source_metadata = oracle_table_metadata(source_config, schema, table)
-
     target_config = get_target_db_connection(profile, region)
 
+    source_metadata = [[]]
+    target_metadata = [[]]
+
+    # Get Metadata from Source DB
+    if source_config["db_engine"] == "Oracle":
+        source_metadata = oracle_table_metadata(source_config, schema, table)
+
     # Get Metadata from Target DB
-    target_metadata = postgres_table_metadata(target_config, schema, table)
+    if target_config["db_engine"] == "PostgreSQL":
+        target_metadata = postgres_table_metadata(target_config, schema, table)
 
+    if write_to_excel:
+        write_to_excel_file(source_metadata, target_metadata)
 
-    wb = openpyxl.Workbook()
-    sheet = wb['Sheet']              # Default sheet name is 'Sheet'
-    sheet.title = 'structure_comparison'
-    sheet.sheet_properties.tabColor = "1072BA"
-
-    current_time = (
-            datetime.now()
-            .strftime("%Y-%m-%d %H:%M")
-            .replace(" ", "-")
-            .replace(":", "-")
-        )
-
-    target_file = '../table_structure_comparison/structure_comparison' + '_' + current_time + '.xlsx'
-
-    for i in range(len(source_metadata)):
-        for j in range(len(source_metadata[i])):
-            sheet.cell(row=i+1, column=j+1).value = source_metadata[i][j]
-        
-        k = len(source_metadata[i]) + 1
-
-        for j in range(len(target_metadata[i])):
-            sheet.cell(row=i+1, column= k + j + 1).value = target_metadata[i][j]        
-
-        #sheet.cell(row=i, column=1).value = 'Hello World'
-
-    wb.save(target_file)
+    return (source_metadata, target_metadata)
