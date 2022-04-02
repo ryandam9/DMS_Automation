@@ -16,7 +16,7 @@ from databases.oracle import oracle_table_metadata
 from databases.postgres import postgres_table_metadata
 from task_settings import task_settings
 from utils import print_messages, write_to_excel_file
-from validate_data import data_validation_driver
+from validate_data import data_validation
 
 
 def create_dms_tasks(profile, region):
@@ -781,9 +781,7 @@ def validate_source_target_data(profile, region):
     """
     Compare and Validate data in source & target DBs
     """
-    print("BUILD IN PROGRESS...")
-
     source_config = get_source_db_connection(profile, region)
     target_config = get_target_db_connection(profile, region)
     
-    data_validation_driver(source_config, target_config)
+    data_validation(source_config, target_config)

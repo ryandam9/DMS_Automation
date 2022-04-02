@@ -15,6 +15,9 @@ DB_LOG_FILE_COUNT = 1
 
 MAX_TASKS_PER_PAGE = 100
 
+DATA_VALIDATION_REC_COUNT = 500
+show_generated_queries = True
+
 csv_files_location = "../config"
 json_files_location = "../json_files"
 task_arn_file = "../config/task_arn_file.txt"
