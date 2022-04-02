@@ -8,10 +8,19 @@ from datetime import datetime
 import boto3
 from tabulate import tabulate
 
-from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
-                    TARGET_DB_ID, csv_files_location, json_files_location,
-                    replication_instance_arn, sns_topic_arn,
-                    source_endpoint_arn, target_endpoint_arn, task_arn_file)
+from config import (
+    DB_LOG_FILE_COUNT,
+    MAX_TASKS_PER_PAGE,
+    SOURCE_DB_ID,
+    TARGET_DB_ID,
+    csv_files_location,
+    json_files_location,
+    replication_instance_arn,
+    sns_topic_arn,
+    source_endpoint_arn,
+    target_endpoint_arn,
+    task_arn_file,
+)
 from databases.oracle import oracle_table_metadata
 from databases.postgres import postgres_table_metadata
 from task_settings import task_settings
@@ -74,8 +83,8 @@ def create_dms_tasks(profile, region):
             msg2 = err
             msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
             msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
-            print_messages([[msg1], [msg2], [msg3], [msg4]], ['Error'])
-            
+            print_messages([[msg1], [msg2], [msg3], [msg4]], ["Error"])
+
             sys.exit(1)
 
     # Wait for the tasks to be in "READY" state
@@ -127,7 +136,7 @@ def list_dms_tasks(profile, region):
         msg2 = err
         msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
         msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
-        print_messages([[msg1], [msg2], [msg3], [msg4]], ['Error'])
+        print_messages([[msg1], [msg2], [msg3], [msg4]], ["Error"])
         sys.exit(1)
 
     tasks = []
@@ -231,7 +240,7 @@ def delete_dms_tasks(profile, region):
                 count += 1
                 msg1 = "Error deleting task with ARN: {}".format(arn)
                 msg2 = error
-                print_messages([[msg1], [msg2]], ['Error'])
+                print_messages([[msg1], [msg2]], ["Error"])
 
     if count > 0:
         print(f"{count} errors encountered while deleting DMS tasks.")
@@ -310,7 +319,7 @@ def test_db_connection(profile, region):
         msg2 = err
         msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
         msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
-        print_messages([[msg1], [msg2], [msg3], [msg4]], ['Error'])
+        print_messages([[msg1], [msg2], [msg3], [msg4]], ["Error"])
         sys.exit(1)
 
 
@@ -587,7 +596,7 @@ def describe_endpoints(profile, region, print_result=False):
         msg2 = err
         msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
         msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to perform this activity!!"
-        print_messages([[msg1], [msg2], [msg3], [msg4]], ['Error'])
+        print_messages([[msg1], [msg2], [msg3], [msg4]], ["Error"])
         sys.exit(1)
 
 
@@ -724,11 +733,13 @@ def validate_source_target_structures_all(profile, region):
     source_metadata = [[]]
     target_metadata = [[]]
 
-    tables_migrated.sort(key=lambda x: x['schema'] + x['table'])
+    tables_migrated.sort(key=lambda x: x["schema"] + x["table"])
 
     # Extract Table metadata for these tables from both Source & Target tables.
     for index, table in enumerate(tables_migrated):
-        print(f"\tGathering metadata for table: {index + 1}:  [{table['schema']}.{table['table']}]")
+        print(
+            f"\tGathering metadata for table: {index + 1}:  [{table['schema']}.{table['table']}]"
+        )
 
         src_meta, tgt_meta = validate_source_target_structures(
             profile, region, table["schema"] + "." + table["table"]
@@ -772,3 +783,10 @@ def validate_source_target_structures(
         write_to_excel_file(source_metadata, target_metadata)
 
     return (source_metadata, target_metadata)
+
+
+def validate_source_target_data(profile, region):
+    """
+    Compare and Validate data in source & target DBs
+    """
+    print("BUILD IN PROGRESS...")

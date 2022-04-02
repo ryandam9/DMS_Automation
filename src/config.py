@@ -5,14 +5,16 @@ target_endpoint_arn = "arn:aws:dms:us-east-2:317460704610:endpoint:4I6ADULFGTZXZ
 sns_topic_arn = ""
 
 DEFAULT_REGION = "us-east-2"
-MAX_TASKS_PER_PAGE = 100
+
+# These are referenced when fetching log files from the DBs.
 SOURCE_DB_ID = "database-1"
 TARGET_DB_ID = "demo"
 
 # This variable controls how many RDS DB log files to be fetched
 DB_LOG_FILE_COUNT = 1
 
+MAX_TASKS_PER_PAGE = 100
+
 csv_files_location = "../config"
 json_files_location = "../json_files"
-
 task_arn_file = "../config/task_arn_file.txt"
