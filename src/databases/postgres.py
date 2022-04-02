@@ -2,6 +2,7 @@ import sys
 
 import psycopg2
 from tabulate import tabulate
+from utils import print_messages
 
 from .postgres_queries import postgres_queries
 
@@ -22,12 +23,11 @@ def postgres_get_connection(config):
         )
 
         return connection
-
-        print("Postgres DB Connection acquired")
-
     except Exception as exception:
-        print("** Error getting DB connection: {}**".format(exception))
-        print(f"{host}:{port}/{service}:{user}")
+        msg1 = "Error getting DB connection: {}".format(exception)
+        msg2 = f"{host}:{port}/{service}:{user}"
+        
+        print_messages([[msg1], [msg2]], ['Error'])
         sys.exit(1)
 
 

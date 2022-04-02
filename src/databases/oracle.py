@@ -2,6 +2,7 @@ import sys
 
 import cx_Oracle
 from tabulate import tabulate
+from utils import print_messages
 
 from .oracle_queries import oracle_queries
 
@@ -18,8 +19,10 @@ def oracle_get_connection(config):
         connection = cx_Oracle.connect(user, password, dsn=dsn)
         return connection
     except Exception as exception:
-        print("** Error getting DB connection: {}**".format(exception))
-        print(f"{host}:{port}/{service}:{user}")
+        msg1 = "Error getting DB connection: {}".format(exception)
+        msg2 = f"{host}:{port}/{service}:{user}"
+        
+        print_messages([[msg1], [msg2]], ['Error'])
         sys.exit(1)
 
 

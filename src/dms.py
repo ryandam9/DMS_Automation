@@ -8,23 +8,14 @@ from datetime import datetime
 import boto3
 from tabulate import tabulate
 
-from config import (
-    DB_LOG_FILE_COUNT,
-    MAX_TASKS_PER_PAGE,
-    SOURCE_DB_ID,
-    TARGET_DB_ID,
-    csv_files_location,
-    json_files_location,
-    replication_instance_arn,
-    sns_topic_arn,
-    source_endpoint_arn,
-    target_endpoint_arn,
-    task_arn_file,
-)
+from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
+                    TARGET_DB_ID, csv_files_location, json_files_location,
+                    replication_instance_arn, sns_topic_arn,
+                    source_endpoint_arn, target_endpoint_arn, task_arn_file)
 from databases.oracle import oracle_table_metadata
 from databases.postgres import postgres_table_metadata
 from task_settings import task_settings
-from utils import write_to_excel_file
+from utils import print_messages, write_to_excel_file
 
 
 def create_dms_tasks(profile, region):
@@ -79,14 +70,12 @@ def create_dms_tasks(profile, region):
             arn_list.append(task_arn)
 
         except Exception as err:
-            print(f"Error creating DMS task for file: {json_file}")
-            print(err)
-            print(
-                "\nNOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
-            )
-            print(
-                "      If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
-            )
+            msg1 = f"Error creating DMS task for file: {json_file}"
+            msg2 = err
+            msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
+            msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
+            print_messages([[msg1], [msg2], [msg3], [msg4]], ['Error'])
+            
             sys.exit(1)
 
     # Wait for the tasks to be in "READY" state
@@ -134,8 +123,11 @@ def list_dms_tasks(profile, region):
         )
 
     except Exception as err:
-        print("Something went wrong while listing DMS tasks")
-        print(err)
+        msg1 = "Error listing DMS tasks"
+        msg2 = err
+        msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
+        msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
+        print_messages([[msg1], [msg2], [msg3], [msg4]], ['Error'])
         sys.exit(1)
 
     tasks = []
@@ -237,8 +229,9 @@ def delete_dms_tasks(profile, region):
                 print("Task: {} deletion in progress...".format(arn))
             except Exception as error:
                 count += 1
-                print("Error deleting task with ARN: {}".format(arn))
-                print(error)
+                msg1 = "Error deleting task with ARN: {}".format(arn)
+                msg2 = error
+                print_messages([[msg1], [msg2]], ['Error'])
 
     if count > 0:
         print(f"{count} errors encountered while deleting DMS tasks.")
@@ -313,8 +306,11 @@ def test_db_connection(profile, region):
         )
 
     except Exception as err:
-        print("Something went wrong while testing the connection")
-        print(err)
+        msg1 = "Something went wrong while testing the connection between INSTANCE and ENDPOINT."
+        msg2 = err
+        msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
+        msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
+        print_messages([[msg1], [msg2], [msg3], [msg4]], ['Error'])
         sys.exit(1)
 
 
@@ -587,8 +583,11 @@ def describe_endpoints(profile, region, print_result=False):
         return result
 
     except Exception as err:
-        print("** Something went wrong while describing DB Endpoints **")
-        print(err)
+        msg1 = "Something went wrong while describing DB Endpoints"
+        msg2 = err
+        msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
+        msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to perform this activity!!"
+        print_messages([[msg1], [msg2], [msg3], [msg4]], ['Error'])
         sys.exit(1)
 
 
@@ -636,7 +635,7 @@ def describe_db_log_files(profile, region):
                 print(
                     f"** Something went wrong while fetching DB Logs for DB Instance: {db_id} **"
                 )
-                print("IS THE DB INSTANCE NAME CORRECT ??")
+                print("IS THE DB INSTANCE NAME CORRECT??")
                 print(error)
 
             return result
@@ -663,7 +662,7 @@ def get_source_db_connection(profile, region):
     user = endpoints[0][6]
 
     # Fetch DB Password from AWS Secrets Manager
-    password = "admin123"
+    password = ""
 
     return {
         "db_engine": db_engine,
@@ -686,7 +685,7 @@ def get_target_db_connection(profile, region):
     user = endpoints[1][6]
 
     # Fetch DB Password from AWS Secrets Manager
-    password = "demo1234"
+    password = ""
 
     return {
         "db_engine": db_engine,
@@ -711,7 +710,7 @@ def validate_source_target_structures_all(profile, region):
         file_full_path = os.path.join(csv_files_location, file)
 
         if file.startswith("include"):
-            print(f"Reading {file}")
+            print(f"-> Reading {file}")
 
             with open(file_full_path, "r") as f:
                 for line in f:
@@ -725,8 +724,11 @@ def validate_source_target_structures_all(profile, region):
     source_metadata = [[]]
     target_metadata = [[]]
 
+    tables_migrated.sort(key=lambda x: x['schema'] + x['table'])
+
     # Extract Table metadata for these tables from both Source & Target tables.
     for index, table in enumerate(tables_migrated):
+        print(f"\tGathering metadata for table: {index + 1}:  [{table['schema']}.{table['table']}]")
 
         src_meta, tgt_meta = validate_source_target_structures(
             profile, region, table["schema"] + "." + table["table"]
@@ -751,7 +753,6 @@ def validate_source_target_structures(
     """
     schema = table_name.split(".")[0]
     table = table_name.split(".")[1]
-    print(f"Gathering metadata for table: [{schema}.{table}]")
 
     source_config = get_source_db_connection(profile, region)
     target_config = get_target_db_connection(profile, region)

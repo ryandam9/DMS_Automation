@@ -3,26 +3,18 @@ import sys
 from pathlib import Path
 
 from config import DEFAULT_REGION
-from dms import (
-    create_dms_tasks,
-    create_iam_role_for_dms_cloudwatch_logs,
-    delete_dms_tasks,
-    describe_db_log_files,
-    describe_endpoints,
-    describe_table_statistics,
-    fetch_cloudwatch_logs_for_a_task,
-    list_dms_tasks,
-    start_dms_tasks,
-    test_db_connection,
-    validate_source_target_structures,
-    validate_source_target_structures_all,
-)
+from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
+                 delete_dms_tasks, describe_db_log_files, describe_endpoints,
+                 describe_table_statistics, fetch_cloudwatch_logs_for_a_task,
+                 list_dms_tasks, start_dms_tasks, test_db_connection,
+                 validate_source_target_structures,
+                 validate_source_target_structures_all)
 from process_input_files import process_input_files
-from utils import get_aws_cli_profile
+from utils import get_aws_cli_profile, print_messages
 
-# ---------------------------------------------------------------------------------------------------#
-# Main section
-# ---------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------------------------#
+# Main section                                                                                     #  
+#--------------------------------------------------------------------------------------------------#
 parser = argparse.ArgumentParser()
 parser.add_argument("--profile", help="AWS CLI Profile to be used", type=str)
 parser.add_argument("--region", help="Region", type=str)
@@ -62,7 +54,7 @@ if args.profile:
     print(f"{icon} Profile specified: {args.profile}")
 
     if args.profile not in profiles:
-        print(f"{icon} Profile {args.profile} not found in ~/.aws/config")
+        print_messages([[f"{icon} Profile {args.profile} not found in ~/.aws/config"]], ['Error'])
         sys.exit(1)
     elif args.profile in profiles:
         print(f"{icon} Profile {args.profile} found in ~/.aws/config")
@@ -71,8 +63,8 @@ else:
         print(f"{icon} Default profile found. Using it.")
         args.profile = "default"
     else:
-        print(
-            f"{icon} No 'default' profile found in ~/.aws/config. Please specify the profile to be used."
+        print_messages(
+            [[f"{icon} No 'default' profile found in ~/.aws/config. Please specify the profile to be used."]], ['Error']
         )
         sys.exit(1)
 
@@ -87,8 +79,7 @@ else:
 
 ## ACTION
 if args.action is None:
-    print(f"{icon} No action specified. Please specify the action to be performed.")
-
+    print_messages([[f"{icon} No action specified. Please specify the action to be performed."]], ['Error'])
     parser.print_help(sys.stderr)
     sys.exit(1)
 
@@ -119,8 +110,9 @@ if args.action == "create_iam_role_for_dms_cloudwatch_logs":
 
 if args.action == "fetch_cloudwatch_logs_for_a_task":
     if args.task_arn is None:
-        print("** Please specify the task arn **")
-        print("... --action fetch_cloudwatch_logs_for_a_task --task_arn XXX")
+        msg1 = "Please specify a task arn"
+        msg2 = "Usage: python app.py --action fetch_cloudwatch_logs_for_a_task --task_arn <task arn>"
+        print_messages([[msg1], [msg2]], ['Error'])
     else:
         fetch_cloudwatch_logs_for_a_task(args.profile, args.region, args.task_arn)
 
@@ -132,8 +124,9 @@ if args.action == "describe_db_log_files":
 
 if args.action == "validate_source_target_structures":
     if args.table_name is None:
-        print("** Please specify a table name in <SCHEMA.TABLE NAME> format**")
-        print("... --action validate_source_target_structures --table_name OT.REGIONS")
+        msg1 = "Please specify a table name in <SCHEMA.TABLE NAME> format"
+        msg2 = "Usage: python app.py --action validate_source_target_structures --table_name <schema>.<table>"
+        print_messages([[msg1], [msg2]], ['Error'])
     else:
         if args.table_name == "all":
             validate_source_target_structures_all(args.profile, args.region)

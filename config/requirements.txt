@@ -1,3 +1,4 @@
 cx_Oracle
 tabulate
-import psycopg2
+openpyxl
+textwrap3
