@@ -1,6 +1,9 @@
 import sys
 
 import cx_Oracle
+import pandas as pd
+import sqlalchemy
+from sqlalchemy.exc import SQLAlchemyError
 from tabulate import tabulate
 from utils import print_messages
 
@@ -24,6 +27,28 @@ def oracle_get_connection(config):
         
         print_messages([[msg1], [msg2]], ['Error'])
         sys.exit(1)
+
+
+def oracle_table_to_df(config, query, params):
+    host = config["host"]
+    port = config["port"]
+    service = config["service"]
+    user = config["user"]
+    password = config["password"]
+
+    try:
+        engine = sqlalchemy.create_engine(f"oracle+cx_oracle://{user}:{password}@{host}:{port}/?service_name={service}", arraysize=1000)       
+        
+        if params is None:
+            df = pd.read_sql(query, engine)
+            return df
+        else:
+            df = pd.read_sql(query, engine, params=params)
+            return df
+
+    except SQLAlchemyError as e:
+        print(e)        
+
 
 
 def oracle_execute_query(config, query, parameters):
@@ -91,3 +116,5 @@ def oracle_table_metadata(config, schema, table, print_result=False):
         )
 
     return query_result
+
+

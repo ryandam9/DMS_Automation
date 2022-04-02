@@ -1,6 +1,9 @@
 import sys
 
+import pandas as pd
 import psycopg2
+import sqlalchemy
+from sqlalchemy.exc import SQLAlchemyError
 from tabulate import tabulate
 from utils import print_messages
 
@@ -29,6 +32,28 @@ def postgres_get_connection(config):
         
         print_messages([[msg1], [msg2]], ['Error'])
         sys.exit(1)
+
+
+def postgres_table_to_df(config, query, params):
+    host = config["host"]
+    port = config["port"]
+    service = config["service"]
+    user = config["user"]
+    password = config["password"]
+
+    try:
+        engine = sqlalchemy.create_engine(f'postgresql+psycopg2://{user}:{password}@{host}/{service}')
+
+        if params is None:
+            df = pd.read_sql(query, engine)
+            return df
+        else:
+            df = pd.read_sql(query, engine, params=params)
+            return df
+
+    except SQLAlchemyError as e:
+        print(e) 
+
 
 
 def postgres_execute_query(config, query, parameters):

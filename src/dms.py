@@ -8,23 +8,15 @@ from datetime import datetime
 import boto3
 from tabulate import tabulate
 
-from config import (
-    DB_LOG_FILE_COUNT,
-    MAX_TASKS_PER_PAGE,
-    SOURCE_DB_ID,
-    TARGET_DB_ID,
-    csv_files_location,
-    json_files_location,
-    replication_instance_arn,
-    sns_topic_arn,
-    source_endpoint_arn,
-    target_endpoint_arn,
-    task_arn_file,
-)
+from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
+                    TARGET_DB_ID, csv_files_location, json_files_location,
+                    replication_instance_arn, sns_topic_arn,
+                    source_endpoint_arn, target_endpoint_arn, task_arn_file)
 from databases.oracle import oracle_table_metadata
 from databases.postgres import postgres_table_metadata
 from task_settings import task_settings
 from utils import print_messages, write_to_excel_file
+from validate_data import data_validation_driver
 
 
 def create_dms_tasks(profile, region):
@@ -790,3 +782,8 @@ def validate_source_target_data(profile, region):
     Compare and Validate data in source & target DBs
     """
     print("BUILD IN PROGRESS...")
+
+    source_config = get_source_db_connection(profile, region)
+    target_config = get_target_db_connection(profile, region)
+    
+    data_validation_driver(source_config, target_config)
