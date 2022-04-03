@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 replication_instance_arn = "arn:aws:dms:us-east-2:317460704610:rep:BF25BSHXHC7DQ73MXESH2LVUASATCYADAIS25BY"
 source_endpoint_arn = "arn:aws:dms:us-east-2:317460704610:endpoint:TZGVBMPKWFKIL473B6RINNYJPUTXBVLAV2GSHLQ"
 target_endpoint_arn = "arn:aws:dms:us-east-2:317460704610:endpoint:4I6ADULFGTZXZOBIZBDQYFGITJHR7ST5E3AMYWQ"
@@ -13,11 +16,20 @@ TARGET_DB_ID = "demo"
 # This variable controls how many RDS DB log files to be fetched
 DB_LOG_FILE_COUNT = 1
 
-MAX_TASKS_PER_PAGE = 100
-
+# How many records to be validated between source & target tables
 DATA_VALIDATION_REC_COUNT = 500
-show_generated_queries = True
+
+# How many data validation threads can run at the same time?
+PARALLEL_THREADS = 1
+
+# Show generated queries or not
+show_generated_queries = False
+
+MAX_TASKS_PER_PAGE = 100
 
 csv_files_location = "../config"
 json_files_location = "../json_files"
 task_arn_file = "../config/task_arn_file.txt"
+
+# Update this variable to point to the Oracle Instant Client.
+oracle_instance_client_path = os.path.join(str(Path.home()), 'desktop', 'instant_client')

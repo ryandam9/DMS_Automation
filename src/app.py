@@ -1,8 +1,13 @@
 import argparse
+import os
+import platform
 import sys
+import warnings
 from pathlib import Path
 
-from config import DEFAULT_REGION
+from sqlalchemy import exc as sa_exc
+
+from config import DEFAULT_REGION, oracle_instance_client_path
 from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
                  delete_dms_tasks, describe_db_log_files, describe_endpoints,
                  describe_table_statistics, fetch_cloudwatch_logs_for_a_task,
@@ -12,6 +17,11 @@ from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
                  validate_source_target_structures_all)
 from process_input_files import process_input_files
 from utils import get_aws_cli_profile, print_messages
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", category=sa_exc.SAWarning)
+    
+current_platform = platform.system().lower()
 
 # --------------------------------------------------------------------------------------------------#
 # Main section                                                                                      #
@@ -175,11 +185,29 @@ if args.action == "describe_db_log_files":
 # Validate table structures between SOURCE & TARGET DBs                                             #
 # --------------------------------------------------------------------------------------------------#
 if args.action == "validate_source_target_structures":
+
+    # Using cx_Oracle requires Oracle Client libraries to be installed. These provide the necessary
+    # network connectivity allowing cx_Oracle to access an Oracle Database instance.               
+    if 'windows' in current_platform:
+        current_path = os.environ['PATH']
+        updated_path = oracle_instance_client_path + ';' + current_path
+        os.environ['PATH'] = updated_path
+
+        msg1 = f"Please make sure that Oracle Instant Client is available at {oracle_instance_client_path}."
+        msg2 = "Download it from https://www.oracle.com/database/technologies/instant-client/winx64-64-downloads.html"
+        msg3 = "Follow the instructions from https://cx-oracle.readthedocs.io/en/latest/user_guide/installation.html#wininstall"
+        print_messages([[msg1], [msg2], [msg3]], ['INFO'])
+
     if args.table_name is None:
         msg1 = "Please specify a table name in <SCHEMA.TABLE NAME> format"
         msg2 = "Usage: python app.py --action validate_source_target_structures --table_name <schema>.<table>"
         print_messages([[msg1], [msg2]], ["Error"])
     else:
+        msg1 = "The 'validate_source_target_structures' action currently supports the following databases:"
+        msg2 = "SOURCE DB: Oracle"
+        msg3 = "TARGET DB: Postgres"
+        print_messages([[msg1], [msg2], [msg3]], ["INFO"])
+
         if args.table_name == "all":
             validate_source_target_structures_all(args.profile, args.region)
         else:
@@ -190,4 +218,9 @@ if args.action == "validate_source_target_structures":
 # Validate data between SOURCE & TARGET DBs                                                         #
 # --------------------------------------------------------------------------------------------------#
 if args.action == "validate_source_target_data":
+    msg1 = "The 'validate_source_target_data' action currently supports the following databases:"
+    msg2 = "SOURCE DB: Oracle"
+    msg3 = "TARGET DB: Postgres"
+    print_messages([[msg1], [msg2], [msg3]], ["INFO"])
+
     validate_source_target_data(args.profile, args.region)

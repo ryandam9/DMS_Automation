@@ -75,3 +75,16 @@ Action | Description | Sample|
 `validate_source_target_structures`|Compares table structures of the Source & Target DB|1. `python app.py --profile test-env --action validate_source_target_structures --table_name OT.WAREHOUSES`.<br><hr>2. `python app.py --profile test-env --action validate_source_target_structures --table_name all`
 `validate_source_target_data`|Compares data in the Source & Target DB|
 ****
+## To perform Data validation for Oracle Databases
+
+### For Windows
+- Download Oracle Instance client from `Basic Package`  from `https://www.oracle.com/database/technologies/instant-client/winx64-64-downloads.html`.
+
+****
+## Other Python packages required
+
+```sh
+cd DMS_Automation/config
+pip install -r requirements.txt
+```
+****

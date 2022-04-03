@@ -1,4 +1,5 @@
 import os
+import textwrap
 from datetime import datetime
 from pathlib import Path
 
@@ -149,9 +150,20 @@ def print_messages(messages, headers):
 
     :return: None
     """
+    wrapped_messages = []
+
+    for message in messages:
+        wrapped_message = "\n".join(
+                        textwrap.wrap(
+                            message[0], width=150, replace_whitespace=False
+                        )
+                    )
+
+        wrapped_messages.append([wrapped_message])
+
     print(
             tabulate(
-                messages,
+                wrapped_messages,
                 headers=headers,
                 tablefmt="fancy_grid",
             )

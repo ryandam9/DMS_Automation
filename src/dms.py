@@ -72,7 +72,7 @@ def create_dms_tasks(profile, region):
 
         except Exception as err:
             msg1 = f"Error creating DMS task for file: {json_file}"
-            msg2 = err
+            msg2 = str(err)
             msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
             msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
             print_messages([[msg1], [msg2], [msg3], [msg4]], ["Error"])
@@ -125,7 +125,7 @@ def list_dms_tasks(profile, region):
 
     except Exception as err:
         msg1 = "Error listing DMS tasks"
-        msg2 = err
+        msg2 = str(err)
         msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
         msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
         print_messages([[msg1], [msg2], [msg3], [msg4]], ["Error"])
@@ -231,7 +231,7 @@ def delete_dms_tasks(profile, region):
             except Exception as error:
                 count += 1
                 msg1 = "Error deleting task with ARN: {}".format(arn)
-                msg2 = error
+                msg2 = str(error)
                 print_messages([[msg1], [msg2]], ["Error"])
 
     if count > 0:
@@ -308,7 +308,7 @@ def test_db_connection(profile, region):
 
     except Exception as err:
         msg1 = "Something went wrong while testing the connection between INSTANCE and ENDPOINT."
-        msg2 = err
+        msg2 = str(err)
         msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
         msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to create a DMS task!!"
         print_messages([[msg1], [msg2], [msg3], [msg4]], ["Error"])
@@ -585,7 +585,7 @@ def describe_endpoints(profile, region, print_result=False):
 
     except Exception as err:
         msg1 = "Something went wrong while describing DB Endpoints"
-        msg2 = err
+        msg2 = str(err)
         msg3 = "NOTE: Are you sure you have the correct AWS profile? Check the '--profile' paramter."
         msg4 = "If no profile is passed, [default] profile will be used. It may not have permission to perform this activity!!"
         print_messages([[msg1], [msg2], [msg3], [msg4]], ["Error"])
