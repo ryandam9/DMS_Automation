@@ -22,6 +22,9 @@ DATA_VALIDATION_REC_COUNT = 500
 # How many data validation threads can run at the same time?
 PARALLEL_THREADS = 1
 
+# When true, the data validation comparison will be logged.
+DEBUG_DATA_VALIDATION = True
+
 # Show generated queries or not
 show_generated_queries = False
 

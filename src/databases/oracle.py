@@ -47,7 +47,8 @@ def oracle_table_to_df(config, query, params):
             return df
 
     except SQLAlchemyError as e:
-        print(e)        
+        print_messages([[str(e)]], ['Error @ oracle_table_to_df()'])
+        sys.exit(1)
 
 
 
