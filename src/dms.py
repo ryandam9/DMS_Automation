@@ -6,17 +6,22 @@ import textwrap
 from datetime import datetime
 
 import boto3
+import pandas as pd
 from tabulate import tabulate
 
 from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
                     TARGET_DB_ID, csv_files_location, json_files_location,
                     replication_instance_arn, sns_topic_arn,
                     source_endpoint_arn, target_endpoint_arn, task_arn_file)
-from databases.oracle import oracle_table_metadata
-from databases.postgres import postgres_table_metadata
+from data_validation import data_validation
+from databases.oracle import oracle_table_metadata, oracle_table_to_df
+from databases.oracle_queries import oracle_queries
+from databases.postgres import postgres_table_metadata, postgres_table_to_df
+from databases.postgres_queries import postgres_queries
+from generate_html_reports import generate_table_metadata_compare_report
+from table_structure_validation import validate_table_structure
 from task_settings import task_settings
 from utils import print_messages, write_to_excel_file
-from validate_data import data_validation
 
 
 def create_dms_tasks(profile, region):
@@ -346,7 +351,7 @@ def describe_table_statistics(profile, region):
             for table_statistics in response["TableStatistics"]:
                 result.append(
                     [
-                        task_arn,
+                        task_arn.split(':')[-1],
                         table_statistics["SchemaName"],
                         table_statistics["TableName"],
                         table_statistics["TableState"],
@@ -663,7 +668,7 @@ def get_source_db_connection(profile, region):
     user = endpoints[0][6]
 
     # Fetch DB Password from AWS Secrets Manager
-    password = ""
+    password = "admin123"
 
     return {
         "db_engine": db_engine,
@@ -686,7 +691,7 @@ def get_target_db_connection(profile, region):
     user = endpoints[1][6]
 
     # Fetch DB Password from AWS Secrets Manager
-    password = ""
+    password = "demo1234"
 
     return {
         "db_engine": db_engine,
@@ -698,12 +703,12 @@ def get_target_db_connection(profile, region):
     }
 
 
-def validate_source_target_structures_all(profile, region):
+def validate_table_structures_all(profile, region):
     """
-    Validate Source and Target DB structures
+    Validate Source and Target DB structures. The tables to be validated
+    are read from the config files. 
     """
-
-    tables_migrated = []
+    tables = []
 
     # Read the Input CSV Files & gather a list of Schemas and tables
     # that are being migrated.
@@ -720,35 +725,17 @@ def validate_source_target_structures_all(profile, region):
                     schema = schema.strip().upper()
                     table = table.strip().upper()
 
-                    tables_migrated.append({"schema": schema, "table": table})
+                    tables.append({"schema": schema, "table": table})
 
-    source_metadata = [[]]
-    target_metadata = [[]]
+    source_config = get_source_db_connection(profile, region)
+    target_config = get_target_db_connection(profile, region)
 
-    tables_migrated.sort(key=lambda x: x["schema"] + x["table"])
-
-    # Extract Table metadata for these tables from both Source & Target tables.
-    for index, table in enumerate(tables_migrated):
-        print(
-            f"\tGathering metadata for table: {index + 1}:  [{table['schema']}.{table['table']}]"
-        )
-
-        src_meta, tgt_meta = validate_source_target_structures(
-            profile, region, table["schema"] + "." + table["table"]
-        )
-
-        if index == 0:
-            source_metadata.extend(src_meta)
-            target_metadata.extend(tgt_meta)
-        else:
-            source_metadata.extend(src_meta[1:])
-            target_metadata.extend(tgt_meta[1:])
-
-    # Write the metadata to a CSV file.
-    write_to_excel_file(source_metadata, target_metadata)
+    validate_table_structure(tables, source_config, target_config)
 
 
-def validate_source_target_structures(
+
+
+def validate_table_structure_single_table(
     profile, region, table_name, write_to_excel=False
 ):
     """
@@ -760,8 +747,8 @@ def validate_source_target_structures(
     source_config = get_source_db_connection(profile, region)
     target_config = get_target_db_connection(profile, region)
 
-    source_metadata = [[]]
-    target_metadata = [[]]
+    source_metadata = []
+    target_metadata = []
 
     # Get Metadata from Source DB
     if source_config["db_engine"] == "Oracle":
@@ -774,6 +761,7 @@ def validate_source_target_structures(
     if write_to_excel:
         write_to_excel_file(source_metadata, target_metadata)
 
+    
     return (source_metadata, target_metadata)
 
 

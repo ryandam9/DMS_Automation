@@ -3,11 +3,8 @@ import json
 import os
 
 from config import csv_files_location, json_files_location
-from utils import (
-    convert_columns_to_lowercase,
-    convert_schemas_to_lowercase,
-    convert_tables_to_lowercase,
-)
+from utils import (convert_columns_to_lowercase, convert_schemas_to_lowercase,
+                   convert_tables_to_lowercase)
 
 # ------------------------------------------------------------------------------------------------#
 # Create named tuples to hold Table, and filter attributes                                        #
@@ -156,8 +153,6 @@ def process_csv_file(csv_file, action):
                 decsion = "No Filter conditions & Auto Partition"
 
             print(f"{counter} - {line.strip()} - {decsion}")
-
-    print("\n")
 
 
 def add_to_non_filter_tables(schema, obj):

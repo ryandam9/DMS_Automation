@@ -13,8 +13,8 @@ from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
                  describe_table_statistics, fetch_cloudwatch_logs_for_a_task,
                  list_dms_tasks, start_dms_tasks, test_db_connection,
                  validate_source_target_data,
-                 validate_source_target_structures,
-                 validate_source_target_structures_all)
+                 validate_table_structure_single_table,
+                 validate_table_structures_all)
 from process_input_files import process_input_files
 from utils import get_aws_cli_profile, print_messages
 
@@ -42,8 +42,8 @@ actions = [
     "fetch_cloudwatch_logs_for_a_task",
     "describe_endpoints",
     "describe_db_log_files",
-    "validate_source_target_structures",
-    "validate_source_target_data",
+    "validate_table_structures",
+    "validate_data_between_source_and_target",
 ]
 
 parser.add_argument(
@@ -184,7 +184,7 @@ if args.action == "describe_db_log_files":
 # --------------------------------------------------------------------------------------------------#
 # Validate table structures between SOURCE & TARGET DBs                                             #
 # --------------------------------------------------------------------------------------------------#
-if args.action == "validate_source_target_structures":
+if args.action == "validate_table_structures":
 
     # Using cx_Oracle requires Oracle Client libraries to be installed. These provide the necessary
     # network connectivity allowing cx_Oracle to access an Oracle Database instance.               
@@ -203,24 +203,27 @@ if args.action == "validate_source_target_structures":
         msg2 = "Usage: python app.py --action validate_source_target_structures --table_name <schema>.<table>"
         print_messages([[msg1], [msg2]], ["Error"])
     else:
-        msg1 = "The 'validate_source_target_structures' action currently supports the following databases:"
+        msg1 = "The 'validate_table_structures' action currently supports the following databases:"
         msg2 = "SOURCE DB: Oracle"
         msg3 = "TARGET DB: Postgres"
         print_messages([[msg1], [msg2], [msg3]], ["INFO"])
 
         if args.table_name == "all":
-            validate_source_target_structures_all(args.profile, args.region)
+            validate_table_structures_all(args.profile, args.region)
         else:
-            validate_source_target_structures(
-                args.profile, args.region, args.table_name
+            validate_table_structure_single_table(
+                args.profile, args.region, args.table_name, True
             )
 # --------------------------------------------------------------------------------------------------#
 # Validate data between SOURCE & TARGET DBs                                                         #
 # --------------------------------------------------------------------------------------------------#
-if args.action == "validate_source_target_data":
-    msg1 = "The 'validate_source_target_data' action currently supports the following databases:"
+if args.action == "validate_data_between_source_and_target":
+    msg1 = "The 'validate_data_between_source_and_target' action currently supports the following databases:"
     msg2 = "SOURCE DB: Oracle"
     msg3 = "TARGET DB: Postgres"
-    print_messages([[msg1], [msg2], [msg3]], ["INFO"])
+    msg4 = ""
+    msg5 = "Update PARALLEL_THREADS for faster comparison to 5 or more. Default is 1."
+    msg6 = "Update DATA_VALIDATION_REC_COUNT to change the number of records to be compared. Default is 1000."
+    print_messages([[msg1], [msg2], [msg3], [msg4], [msg5], [msg6]], ["INFO"])
 
     validate_source_target_data(args.profile, args.region)

@@ -17,10 +17,10 @@ TARGET_DB_ID = "demo"
 DB_LOG_FILE_COUNT = 1
 
 # How many records to be validated between source & target tables
-DATA_VALIDATION_REC_COUNT = 500
+DATA_VALIDATION_REC_COUNT = 1000
 
 # How many data validation threads can run at the same time?
-PARALLEL_THREADS = 1
+PARALLEL_THREADS = 5
 
 # When true, the data validation comparison will be logged.
 DEBUG_DATA_VALIDATION = True

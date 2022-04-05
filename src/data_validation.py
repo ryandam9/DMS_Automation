@@ -1,19 +1,18 @@
+import math
 import os
 import threading
 
+import numpy as np
 import pandas as pd
 from sql_formatter.core import format_sql
 
-from config import (
-    DATA_VALIDATION_REC_COUNT,
-    DEBUG_DATA_VALIDATION,
-    PARALLEL_THREADS,
-    csv_files_location,
-    show_generated_queries,
-)
+from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
+                    PARALLEL_THREADS, csv_files_location,
+                    show_generated_queries)
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
+from generate_html_reports import generate_data_validation_report
 from utils import print_messages
 
 
@@ -58,28 +57,36 @@ def data_validation(src_config, tgt_config):
     """
     # Step 1: Get the list of tables that are being migrated
     tables_migrated = get_tables_to_validate()
+    print(f"-> Tables have been identified. Count: {len(tables_migrated)}")
 
     # Step 2: Use DB Metadata, identify primary key columns for each
     # table from source DB.
     primary_keys_query = oracle_queries["get_primary_key"]
+    inline_view = ""
+
+    for index, table in enumerate(tables_migrated):
+        if index > 0:
+            inline_view += " UNION "
+
+        inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name FROM DUAL "
+
+    query = primary_keys_query.replace("<temp_placeholder>", inline_view)
+
+    # Execute the query
+    df = oracle_table_to_df(src_config, query, None)
 
     # This dictionary will hold the primary key data for each table
     primary_keys = {}
 
-    # Identify primary key column names
-    for table in tables_migrated:
-        schema = table["schema"]
-        table = table["table"]
+    for row in df.values.tolist():
+        schema, table, pk = row[0], row[1], row[2]
 
-        result_set = oracle_table_to_df(src_config, primary_keys_query, [schema, table])
+        if table not in primary_keys.keys():
+            primary_keys[table] = []
 
-        # A primary key can have multiple columns.
-        multiple_cols = []
+        primary_keys[table].append(pk)
 
-        for row in result_set.values.tolist():
-            multiple_cols.append(row[0].lower())
-
-        primary_keys[table] = multiple_cols
+    print(f"-> Primary keys have been identified.")
 
     no_tables = len(tables_migrated)
 
@@ -129,7 +136,23 @@ def data_validation(src_config, tgt_config):
                 f"-> {i} tables have been processed. Remaining tables: {no_tables - i}"
             )
 
-    print(f"-> Results have been written to this location: ../data_validation/")
+    print(f"-> Results have been written to this location: {os.path.abspath('../data_validation')}")
+
+    if DEBUG_DATA_VALIDATION:
+        print(f"-> Column level differences have been captured @ {os.path.abspath('../logs')}")
+
+    # Generate a HTML report
+    html_rows = []
+
+    for file in os.listdir("../logs"):
+        file_full_path = os.path.join("../logs", file)
+
+        if "summary" in file:
+            with open(file_full_path, "r") as f:
+                for line in f:
+                    html_rows.append(line)
+
+    generate_data_validation_report(html_rows)    
 
 
 def data_validation_single_table(schema, table, primary_key, src_config, tgt_config):
@@ -142,8 +165,8 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         - Finally, writes the result to a spreadsheet.
     """
     query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
-
     source_df = oracle_table_to_df(src_config, query, None)
+    primary_key = [ x.lower() for x in primary_key]
 
     # Step 4: Capture the primary key data.
     pk_values = source_df[primary_key].values.tolist()
@@ -214,6 +237,8 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         source_df, target_df, how="left", left_on=primary_key, right_on=target_table_pk
     )
 
+    combined_df = combined_df.replace({np.nan: None})
+
     # Now that, we have Source & Target DB data in a single Dataframe
     # Compare the records and check if they're same or not.
     formatted_df = compare_data(combined_df, schema, table, columns, primary_key)
@@ -238,6 +263,7 @@ def compare_data(df, schema, table, columns, primary_key):
         primary_key_indexes.append(i)
 
     formatted_recs = []
+    columns_having_differences = set()
 
     # Loop through each row in the Dataframe.
     for index, rec in enumerate(df.values.tolist()):
@@ -248,13 +274,16 @@ def compare_data(df, schema, table, columns, primary_key):
         for i in primary_key_indexes:
             pk += f"{columns[i]} = {rec[i]}"
 
+        decision = "MATCH"
+
         # Compare all the columns in the record.
         for i in range(no_cols_to_compare):
             source_cell = rec[i]
             target_cell = rec[i + no_cols_to_compare]
-            decision = ""
 
-            if source_cell != target_cell:
+            if ((source_cell is None and target_cell is not None) or 
+                (source_cell is not None and target_cell is None) or
+                (source_cell is not None and target_cell is not None and source_cell != target_cell)):
                 no_cols_having_differences += 1
 
                 if index not in differences.keys():
@@ -269,10 +298,10 @@ def compare_data(df, schema, table, columns, primary_key):
                     }
                 )
 
+                columns_having_differences.add(columns[i])
                 decision = "NO MATCH"
-            else:
-                decision = "MATCH"
 
+        # If there are differences in a record, increment the counter.
         if no_cols_having_differences > 0:
             no_recs_having_differences += 1
 
@@ -284,7 +313,7 @@ def compare_data(df, schema, table, columns, primary_key):
     formatted_df_cols.append("result")
     formatted_df = pd.DataFrame(formatted_recs, columns=formatted_df_cols)
 
-    print(f"-> {schema}.{table}: {no_recs_having_differences} differences found")
+    print(f"-> {schema:>30s} {table:>30s} {str(no_recs_having_differences):>10s} differences found")
 
     if DEBUG_DATA_VALIDATION:
         log_file = open(f"../logs/{schema}_{table}_data_validation.log", "w")
@@ -301,5 +330,12 @@ def compare_data(df, schema, table, columns, primary_key):
                 )
 
         log_file.close()
+
+    # Generate summary file
+    summary_file = open(f"../logs/{schema}_{table}_data_validation_summary.log", "w")
+
+    # Table, no. of records validated, no. of records having differences, Columns having differences
+    line1 = f"{schema}:{table}:{len(df)}:{no_recs_having_differences}:{','.join(list(columns_having_differences))}"
+    summary_file.write(line1 + "\n")
 
     return formatted_df

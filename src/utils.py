@@ -109,10 +109,12 @@ def write_to_excel_file(list1, list2):
     sheet.title = "structure_comparison"
     sheet.sheet_properties.tabColor = "1072BA"
 
-    thin_border = Border(left=Side(style='thin'), 
-                     right=Side(style='thin'), 
-                     top=Side(style='thin'), 
-                     bottom=Side(style='thin'))
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
 
     current_time = (
         datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")
@@ -127,14 +129,14 @@ def write_to_excel_file(list1, list2):
 
     for i in range(len(list1)):
         for j in range(len(list1[i])):
-            sheet.cell(row=i, column=j + 1).value = list1[i][j]
-            sheet.cell(row=i, column=j + 1).border = thin_border
+            sheet.cell(row=i + 1, column=j + 1).value = list1[i][j]
+            sheet.cell(row=i + 1, column=j + 1).border = thin_border
 
         k = len(list1[i]) + 1
 
         for j in range(len(list2[i])):
-            sheet.cell(row=i, column=k + j + 1).value = list2[i][j]
-            sheet.cell(row=i, column=k + j + 1).border = thin_border
+            sheet.cell(row=i + 1, column=k + j + 1).value = list2[i][j]
+            sheet.cell(row=i + 1, column=k + j + 1).border = thin_border
 
     wb.save(target_file)
 
@@ -154,17 +156,15 @@ def print_messages(messages, headers):
 
     for message in messages:
         wrapped_message = "\n".join(
-                        textwrap.wrap(
-                            message[0], width=150, replace_whitespace=False
-                        )
-                    )
+            textwrap.wrap(message[0], width=150, replace_whitespace=False)
+        )
 
         wrapped_messages.append([wrapped_message])
 
     print(
-            tabulate(
-                wrapped_messages,
-                headers=headers,
-                tablefmt="fancy_grid",
-            )
+        tabulate(
+            wrapped_messages,
+            headers=headers,
+            tablefmt="fancy_grid",
         )
+    )
