@@ -556,14 +556,13 @@ def describe_endpoints(profile, region, print_result=False):
             ],
         )
 
-        print(response["Endpoints"][0].keys())
+        print(f"-> {len(response['Endpoints'])} Endpoints found.")
 
         for db_endpoint in response["Endpoints"]:
-            # db_specific_key = db_endpoint["EngineDisplayName"] + "Settings"
+            extra_connection_attributes = ""
 
-            # extra_connection_attributes = ""
-            # if "ExtraConnectionAttributes" in db_endpoint.keys():
-            #     extra_connection_attributes = db_endpoint["ExtraConnectionAttributes"]
+            if "ExtraConnectionAttributes" in db_endpoint.keys():
+                extra_connection_attributes = db_endpoint["ExtraConnectionAttributes"]
 
             result.append(
                 [
@@ -574,7 +573,7 @@ def describe_endpoints(profile, region, print_result=False):
                     db_endpoint["DatabaseName"],
                     db_endpoint["Port"],
                     db_endpoint["Username"],
-                    # extra_connection_attributes,
+                    extra_connection_attributes,
                 ]
             )
 
@@ -596,7 +595,6 @@ def describe_endpoints(profile, region, print_result=False):
                 )
             )
 
-        # print(json.dumps(response, indent=4, sort_keys=True, default=str))
         return result
 
     except Exception as err:
