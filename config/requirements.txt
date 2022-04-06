@@ -5,3 +5,4 @@ textwrap3
 sql-formatter
 pandas
 sqlalchemy
+psycopg2

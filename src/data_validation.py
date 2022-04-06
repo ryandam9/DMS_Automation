@@ -1,4 +1,3 @@
-import math
 import os
 import threading
 
@@ -6,9 +5,13 @@ import numpy as np
 import pandas as pd
 from sql_formatter.core import format_sql
 
-from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
-                    PARALLEL_THREADS, csv_files_location,
-                    show_generated_queries)
+from config import (
+    DATA_VALIDATION_REC_COUNT,
+    DEBUG_DATA_VALIDATION,
+    PARALLEL_THREADS,
+    csv_files_location,
+    show_generated_queries,
+)
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
@@ -136,10 +139,14 @@ def data_validation(src_config, tgt_config):
                 f"-> {i} tables have been processed. Remaining tables: {no_tables - i}"
             )
 
-    print(f"-> Results have been written to this location: {os.path.abspath('../data_validation')}")
+    print(
+        f"-> Results have been written to this location: {os.path.abspath('../data_validation')}"
+    )
 
     if DEBUG_DATA_VALIDATION:
-        print(f"-> Column level differences have been captured @ {os.path.abspath('../logs')}")
+        print(
+            f"-> Column level differences have been captured @ {os.path.abspath('../logs')}"
+        )
 
     # Generate a HTML report
     html_rows = []
@@ -152,7 +159,7 @@ def data_validation(src_config, tgt_config):
                 for line in f:
                     html_rows.append(line)
 
-    generate_data_validation_report(html_rows)    
+    generate_data_validation_report(html_rows)
 
 
 def data_validation_single_table(schema, table, primary_key, src_config, tgt_config):
@@ -166,7 +173,7 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
     """
     query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
     source_df = oracle_table_to_df(src_config, query, None)
-    primary_key = [ x.lower() for x in primary_key]
+    primary_key = [x.lower() for x in primary_key]
 
     # Step 4: Capture the primary key data.
     pk_values = source_df[primary_key].values.tolist()
@@ -281,9 +288,15 @@ def compare_data(df, schema, table, columns, primary_key):
             source_cell = rec[i]
             target_cell = rec[i + no_cols_to_compare]
 
-            if ((source_cell is None and target_cell is not None) or 
-                (source_cell is not None and target_cell is None) or
-                (source_cell is not None and target_cell is not None and source_cell != target_cell)):
+            if (
+                (source_cell is None and target_cell is not None)
+                or (source_cell is not None and target_cell is None)
+                or (
+                    source_cell is not None
+                    and target_cell is not None
+                    and source_cell != target_cell
+                )
+            ):
                 no_cols_having_differences += 1
 
                 if index not in differences.keys():
@@ -313,7 +326,9 @@ def compare_data(df, schema, table, columns, primary_key):
     formatted_df_cols.append("result")
     formatted_df = pd.DataFrame(formatted_recs, columns=formatted_df_cols)
 
-    print(f"-> {schema:>30s} {table:>30s} {str(no_recs_having_differences):>10s} differences found")
+    print(
+        f"-> {schema:>30s} {table:>30s} {str(no_recs_having_differences):>10s} differences found"
+    )
 
     if DEBUG_DATA_VALIDATION:
         log_file = open(f"../logs/{schema}_{table}_data_validation.log", "w")
@@ -339,3 +354,26 @@ def compare_data(df, schema, table, columns, primary_key):
     summary_file.write(line1 + "\n")
 
     return formatted_df
+
+
+def generate_db_specific_inline_view(db_engine, tables):
+    """
+
+    :param db_engine: Specifies a database engine (Oracle, PostgreSQL, etc.)
+    :param tables: A list of tables to be included in the inline view. Each table is a map
+    with the following keys: schema, table.
+
+    :return: A string containing the inline view.
+    """
+    inline_view = ""
+
+    for index, table in enumerate(tables):
+        if index > 0:
+            inline_view += " UNION "
+
+        if db_engine == "Oracle":
+            inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name FROM DUAL "
+        elif db_engine == "PostgreSQL":
+            inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name "
+
+        return inline_view

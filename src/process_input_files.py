@@ -3,8 +3,11 @@ import json
 import os
 
 from config import csv_files_location, json_files_location
-from utils import (convert_columns_to_lowercase, convert_schemas_to_lowercase,
-                   convert_tables_to_lowercase)
+from utils import (
+    convert_columns_to_lowercase,
+    convert_schemas_to_lowercase,
+    convert_tables_to_lowercase,
+)
 
 # ------------------------------------------------------------------------------------------------#
 # Create named tuples to hold Table, and filter attributes                                        #
@@ -286,7 +289,7 @@ def create_tasks_for_filter_tables(tables):
         data["rules"].append(convert_tables_to_lowercase())
         data["rules"].append(convert_columns_to_lowercase())
 
-        file_name = "f{table.schema}-{table.table}-{part_of_filename}.json"
+        file_name = f"{table.schema}-{table.table}-{part_of_filename}.json"
         file_name = file_name.replace("_", "-").lower()
 
         with open(os.path.join(json_files_location, file_name), "w") as fp:

@@ -9,10 +9,19 @@ import boto3
 import pandas as pd
 from tabulate import tabulate
 
-from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
-                    TARGET_DB_ID, csv_files_location, json_files_location,
-                    replication_instance_arn, sns_topic_arn,
-                    source_endpoint_arn, target_endpoint_arn, task_arn_file)
+from config import (
+    DB_LOG_FILE_COUNT,
+    MAX_TASKS_PER_PAGE,
+    SOURCE_DB_ID,
+    TARGET_DB_ID,
+    csv_files_location,
+    json_files_location,
+    replication_instance_arn,
+    sns_topic_arn,
+    source_endpoint_arn,
+    target_endpoint_arn,
+    task_arn_file,
+)
 from data_validation import data_validation
 from databases.oracle import oracle_table_metadata, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
@@ -351,7 +360,7 @@ def describe_table_statistics(profile, region):
             for table_statistics in response["TableStatistics"]:
                 result.append(
                     [
-                        task_arn.split(':')[-1],
+                        task_arn.split(":")[-1],
                         table_statistics["SchemaName"],
                         table_statistics["TableName"],
                         table_statistics["TableState"],
@@ -547,23 +556,25 @@ def describe_endpoints(profile, region, print_result=False):
             ],
         )
 
-        for db_endpoint in response["Endpoints"]:
-            db_specific_key = db_endpoint["EngineDisplayName"] + "Settings"
+        print(response["Endpoints"][0].keys())
 
-            extra_connection_attributes = ""
-            if "ExtraConnectionAttributes" in db_endpoint.keys():
-                extra_connection_attributes = db_endpoint["ExtraConnectionAttributes"]
+        for db_endpoint in response["Endpoints"]:
+            # db_specific_key = db_endpoint["EngineDisplayName"] + "Settings"
+
+            # extra_connection_attributes = ""
+            # if "ExtraConnectionAttributes" in db_endpoint.keys():
+            #     extra_connection_attributes = db_endpoint["ExtraConnectionAttributes"]
 
             result.append(
                 [
                     db_endpoint["EndpointIdentifier"],
                     db_endpoint["EndpointType"],
                     db_endpoint["EngineDisplayName"],
-                    db_endpoint[db_specific_key]["ServerName"],
-                    db_endpoint[db_specific_key]["DatabaseName"],
-                    db_endpoint[db_specific_key]["Port"],
-                    db_endpoint[db_specific_key]["Username"],
-                    extra_connection_attributes,
+                    db_endpoint["ServerName"],
+                    db_endpoint["DatabaseName"],
+                    db_endpoint["Port"],
+                    db_endpoint["Username"],
+                    # extra_connection_attributes,
                 ]
             )
 
@@ -706,7 +717,7 @@ def get_target_db_connection(profile, region):
 def validate_table_structures_all(profile, region):
     """
     Validate Source and Target DB structures. The tables to be validated
-    are read from the config files. 
+    are read from the config files.
     """
     tables = []
 
@@ -731,8 +742,6 @@ def validate_table_structures_all(profile, region):
     target_config = get_target_db_connection(profile, region)
 
     validate_table_structure(tables, source_config, target_config)
-
-
 
 
 def validate_table_structure_single_table(
@@ -761,7 +770,6 @@ def validate_table_structure_single_table(
     if write_to_excel:
         write_to_excel_file(source_metadata, target_metadata)
 
-    
     return (source_metadata, target_metadata)
 
 
@@ -771,5 +779,5 @@ def validate_source_target_data(profile, region):
     """
     source_config = get_source_db_connection(profile, region)
     target_config = get_target_db_connection(profile, region)
-    
+
     data_validation(source_config, target_config)

@@ -1,7 +1,9 @@
 import os
 from pathlib import Path
 
-replication_instance_arn = "arn:aws:dms:us-east-2:317460704610:rep:BF25BSHXHC7DQ73MXESH2LVUASATCYADAIS25BY"
+replication_instance_arn = (
+    "arn:aws:dms:us-east-2:317460704610:rep:BF25BSHXHC7DQ73MXESH2LVUASATCYADAIS25BY"
+)
 source_endpoint_arn = "arn:aws:dms:us-east-2:317460704610:endpoint:TZGVBMPKWFKIL473B6RINNYJPUTXBVLAV2GSHLQ"
 target_endpoint_arn = "arn:aws:dms:us-east-2:317460704610:endpoint:4I6ADULFGTZXZOBIZBDQYFGITJHR7ST5E3AMYWQ"
 # sns_topic_arn = 'arn:aws:sns:us-east-2:317460704610:DMSTASK'
@@ -35,4 +37,8 @@ json_files_location = "../json_files"
 task_arn_file = "../config/task_arn_file.txt"
 
 # Update this variable to point to the Oracle Instant Client.
-oracle_instance_client_path = os.path.join(str(Path.home()), 'desktop', 'instant_client')
+oracle_instance_client_path = os.path.join(
+    str(Path.home()), "desktop", "instant_client"
+)
+
+# r"c:\Users\pavanzdb\desktop\instant_client"

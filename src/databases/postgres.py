@@ -29,8 +29,8 @@ def postgres_get_connection(config):
     except Exception as exception:
         msg1 = "Error getting DB connection: {}".format(exception)
         msg2 = f"{host}:{port}/{service}:{user}"
-        
-        print_messages([[msg1], [msg2]], ['Error'])
+
+        print_messages([[msg1], [msg2]], ["Error"])
         sys.exit(1)
 
 
@@ -42,7 +42,9 @@ def postgres_table_to_df(config, query, params):
     password = config["password"]
 
     try:
-        engine = sqlalchemy.create_engine(f'postgresql+psycopg2://{user}:{password}@{host}/{service}')
+        engine = sqlalchemy.create_engine(
+            f"postgresql+psycopg2://{user}:{password}@{host}/{service}"
+        )
 
         if params is None:
             df = pd.read_sql(query, engine)
@@ -52,8 +54,7 @@ def postgres_table_to_df(config, query, params):
             return df
 
     except SQLAlchemyError as e:
-        print(e) 
-
+        print(e)
 
 
 def postgres_execute_query(config, query, parameters):

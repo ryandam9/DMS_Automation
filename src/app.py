@@ -221,9 +221,8 @@ if args.action == "validate_data_between_source_and_target":
     msg1 = "The 'validate_data_between_source_and_target' action currently supports the following databases:"
     msg2 = "SOURCE DB: Oracle"
     msg3 = "TARGET DB: Postgres"
-    msg4 = ""
-    msg5 = "Update PARALLEL_THREADS for faster comparison to 5 or more. Default is 1."
-    msg6 = "Update DATA_VALIDATION_REC_COUNT to change the number of records to be compared. Default is 1000."
-    print_messages([[msg1], [msg2], [msg3], [msg4], [msg5], [msg6]], ["INFO"])
+    msg4 = "Update PARALLEL_THREADS for faster comparison to 5 or more. Default is 1."
+    msg5 = "Update DATA_VALIDATION_REC_COUNT to change the number of records to be compared. Default is 1000."
+    print_messages([[msg1], [msg2], [msg3], [msg4], [msg5]], ["INFO"])
 
     validate_source_target_data(args.profile, args.region)

@@ -24,8 +24,8 @@ def oracle_get_connection(config):
     except Exception as exception:
         msg1 = "Error getting DB connection: {}".format(exception)
         msg2 = f"{host}:{port}/{service}:{user}"
-        
-        print_messages([[msg1], [msg2]], ['Error'])
+
+        print_messages([[msg1], [msg2]], ["Error"])
         sys.exit(1)
 
 
@@ -37,8 +37,11 @@ def oracle_table_to_df(config, query, params):
     password = config["password"]
 
     try:
-        engine = sqlalchemy.create_engine(f"oracle+cx_oracle://{user}:{password}@{host}:{port}/?service_name={service}", arraysize=1000)       
-        
+        engine = sqlalchemy.create_engine(
+            f"oracle+cx_oracle://{user}:{password}@{host}:{port}/?service_name={service}",
+            arraysize=1000,
+        )
+
         if params is None:
             df = pd.read_sql(query, engine)
             return df
@@ -47,9 +50,8 @@ def oracle_table_to_df(config, query, params):
             return df
 
     except SQLAlchemyError as e:
-        print_messages([[str(e)]], ['Error @ oracle_table_to_df()'])
+        print_messages([[str(e)]], ["Error @ oracle_table_to_df()"])
         sys.exit(1)
-
 
 
 def oracle_execute_query(config, query, parameters):
@@ -117,5 +119,3 @@ def oracle_table_metadata(config, schema, table, print_result=False):
         )
 
     return query_result
-
-
