@@ -155,3 +155,4 @@ table_structure_validation/
 data_validation/
 logs/
 json_files/
+.vscode
