@@ -49,8 +49,8 @@ usage: app.py [-h] [--profile PROFILE] [--region REGION]
                   fetch_cloudwatch_logs_for_a_task,
                   describe_endpoints,
                   describe_db_log_files,
-                  validate_source_target_structures,
-                  validate_source_target_data
+                  validate_table_structures,
+                  validate_data
                   }
               ]
               [--task_arn TASK_ARN] [--table_name TABLE_NAME]
@@ -62,10 +62,10 @@ Following are different types of actions the script supports.
 Action | Description | Sample|
 --- | --- | --- | 
 `generate_json_files`|Generate DMS JSON Files|`python app.py --action generate_json_files`|
-`create_dms_tasks`|Create DMS Tasks|
+`create_dms_tasks`|Create JSON Files, and then creates DMS tasks|
 `list_dms_tasks`|List DMS Tasks|
 `delete_dms_tasks`|Delete DMS tasks|
-`start_dms_tasks`|Start DMS tasks|
+`run_dms_tasks`|Run DMS tasks|
 `test_db_connection_from_replication_instance`|Test DB Connections
 `describe_table_statistics`|Describe Table stats
 `create_iam_role_for_dms_cloudwatch_logs`|Creates IAM role needed by DMS to log
