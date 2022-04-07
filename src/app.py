@@ -111,6 +111,21 @@ else:
     )
 
 # --------------------------------------------------------------------------------------------------#
+# Create following directories
+# --------------------------------------------------------------------------------------------------#
+if not os.path.exists('../logs'):
+    os.mkdir('../logs')    
+
+if not os.path.exists('../table_structure_validation'):
+    os.mkdir('../table_structure_validation')    
+
+if not os.path.exists('../data_validation'):
+    os.mkdir('../data_validation')
+
+if not os.path.exists('../json_files'):
+    os.mkdir('../json_files')
+
+# --------------------------------------------------------------------------------------------------#
 # Process the Input CSV Files & generate JSON Configurations                                        #
 # --------------------------------------------------------------------------------------------------#
 if args.action == "generate_json_files":
