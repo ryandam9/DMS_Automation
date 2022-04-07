@@ -556,8 +556,6 @@ def describe_endpoints(profile, region, print_result=False):
             ],
         )
 
-        print(f"-> {len(response['Endpoints'])} Endpoints found.")
-
         for db_endpoint in response["Endpoints"]:
             extra_connection_attributes = ""
 

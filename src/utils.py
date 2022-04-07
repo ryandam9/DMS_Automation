@@ -156,7 +156,7 @@ def print_messages(messages, headers):
 
     for message in messages:
         wrapped_message = "\n".join(
-            textwrap.wrap(message[0], width=150, replace_whitespace=False)
+            textwrap.wrap(message[0], width=180, replace_whitespace=False)
         )
 
         wrapped_messages.append([wrapped_message])

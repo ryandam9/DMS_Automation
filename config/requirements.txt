@@ -6,3 +6,4 @@ sql-formatter
 pandas
 sqlalchemy
 psycopg2
+numpy

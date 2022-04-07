@@ -184,8 +184,7 @@ if args.action == "describe_db_log_files":
 # --------------------------------------------------------------------------------------------------#
 # Validate table structures between SOURCE & TARGET DBs                                             #
 # --------------------------------------------------------------------------------------------------#
-if args.action == "validate_table_structures":
-
+if args.action == "validate_table_structures" or args.action == "validate_data_between_source_and_target":
     # Using cx_Oracle requires Oracle Client libraries to be installed. These provide the necessary
     # network connectivity allowing cx_Oracle to access an Oracle Database instance.               
     if 'windows' in current_platform:
@@ -198,6 +197,7 @@ if args.action == "validate_table_structures":
         msg3 = "Follow the instructions from https://cx-oracle.readthedocs.io/en/latest/user_guide/installation.html#wininstall"
         print_messages([[msg1], [msg2], [msg3]], ['INFO'])
 
+if args.action == "validate_table_structures":
     if args.table_name is None:
         msg1 = "Please specify a table name in <SCHEMA.TABLE NAME> format"
         msg2 = "Usage: python app.py --action validate_source_target_structures --table_name <schema>.<table>"
