@@ -37,4 +37,4 @@ json_files_location = "../json_files"
 task_arn_file = "../config/task_arn_file.txt"
 
 # Update this variable to point to the Oracle Instant Client.
-oracle_instance_client_path = r"C:\Users\ravis\Desktop\ravi\instantclient_21_3"
+oracle_instance_client_path = r"C:\Users\ravis\Desktop\ravi\instantclient_21_"

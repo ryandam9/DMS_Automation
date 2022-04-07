@@ -207,10 +207,21 @@ if args.action == "validate_table_structures" or args.action == "validate_data_b
         updated_path = oracle_instance_client_path + ';' + current_path
         os.environ['PATH'] = updated_path
 
+        client_path = updated_path.split(";")[0]
+        print(f"PATH is set to: {client_path}")
+
         msg1 = f"Please make sure that Oracle Instant Client is available at {oracle_instance_client_path}."
         msg2 = "Download it from https://www.oracle.com/database/technologies/instant-client/winx64-64-downloads.html"
         msg3 = "Follow the instructions from https://cx-oracle.readthedocs.io/en/latest/user_guide/installation.html#wininstall"
         print_messages([[msg1], [msg2], [msg3]], ['INFO'])
+
+        if not os.path.exists(f"{oracle_instance_client_path}/oci.dll"):
+            msg1 = f"Oracle client path {oracle_instance_client_path} seems incorrect!!"
+            msg2 = "Does the specified path contain oci.dll, and other files ??"
+            msg3 = "Update correct path @ " + os.path.abspath('config.py')
+            print_messages([[msg1], [msg2], [msg3]], ['ERROR'])
+            sys.exit(1)        
+
 
 if args.action == "validate_table_structures":
     if args.table_name is None:
