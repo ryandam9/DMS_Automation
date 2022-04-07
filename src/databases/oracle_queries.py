@@ -66,9 +66,9 @@ FROM
    , all_cons_columns cols
    , temp
 WHERE 
-    cons.owner = temp.owner
-AND cols.owner = temp.owner
-AND cols.table_name = temp.table_name
+    UPPER(cons.owner) = UPPER(temp.owner)
+AND UPPER(cols.owner) = UPPER(temp.owner)
+AND UPPER(cols.table_name) = UPPER(temp.table_name)
 AND cons.constraint_type = 'P'
 AND cons.constraint_name = cols.constraint_name
 AND cons.status = 'ENABLED'
