@@ -75,6 +75,26 @@ Action | Description | Sample|
 `validate_table_structures`|Compares table structures of the Source & Target DB|1. `python app.py --profile test-env --action validate_table_structures --table_name OT.WAREHOUSES`.<br><hr>2. `python app.py --profile test-env --action validate_table_structures --table_name all`
 `validate_data`|Compares data in the Source & Target DB|
 ****
+
+#### For Quick run
+
+```sh
+python app.py --action generate_json_files
+python app.py --action create_dms_tasks
+python app.py --action list_dms_tasks
+python app.py --action delete_dms_tasks
+python app.py --action run_dms_tasks
+python app.py --action test_db_connection_from_replication_instance
+python app.py --action describe_table_statistics
+python app.py --action create_iam_role_for_dms_cloudwatch_logs
+python app.py --action fetch_cloudwatch_logs_for_a_task --task_arn <task_arn>
+python app.py --action describe_endpoints
+python app.py --action describe_db_log_files
+python app.py --action validate_table_structures --table_name <schema.table>
+python app.py --action validate_table_structures --table_name all
+python app.py --action validate_data
+```
+
 ## To perform Data validation for Oracle Databases
 
 ### For Windows
