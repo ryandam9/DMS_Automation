@@ -9,25 +9,17 @@ import boto3
 import pandas as pd
 from tabulate import tabulate
 
-from config import (
-    DB_LOG_FILE_COUNT,
-    MAX_TASKS_PER_PAGE,
-    SOURCE_DB_ID,
-    TARGET_DB_ID,
-    csv_files_location,
-    json_files_location,
-    replication_instance_arn,
-    sns_topic_arn,
-    source_endpoint_arn,
-    target_endpoint_arn,
-    task_arn_file,
-)
+from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
+                    TARGET_DB_ID, csv_files_location, json_files_location,
+                    replication_instance_arn, sns_topic_arn,
+                    source_endpoint_arn, target_endpoint_arn, task_arn_file)
 from data_validation import data_validation
 from databases.oracle import oracle_table_metadata, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_metadata, postgres_table_to_df
 from databases.postgres_queries import postgres_queries
 from generate_html_reports import generate_table_metadata_compare_report
+from process_input_files import process_input_files
 from table_structure_validation import validate_table_structure
 from task_settings import task_settings
 from utils import print_messages, write_to_excel_file
@@ -41,6 +33,9 @@ def create_dms_tasks(profile, region):
     session = boto3.Session(profile_name=profile, region_name=region)
     dms = session.client("dms")
 
+    # Generate JSON file first
+    process_input_files()
+    
     arn_list = []
     count = 0
 
@@ -178,7 +173,7 @@ def list_dms_tasks(profile, region):
     )
 
 
-def start_dms_tasks(profile, region):
+def run_dms_tasks(profile, region):
     """
     Starts the DMS tasks.
 

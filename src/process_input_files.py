@@ -3,11 +3,8 @@ import json
 import os
 
 from config import csv_files_location, json_files_location
-from utils import (
-    convert_columns_to_lowercase,
-    convert_schemas_to_lowercase,
-    convert_tables_to_lowercase,
-)
+from utils import (convert_columns_to_lowercase, convert_schemas_to_lowercase,
+                   convert_tables_to_lowercase)
 
 # ------------------------------------------------------------------------------------------------#
 # Create named tuples to hold Table, and filter attributes                                        #
@@ -95,7 +92,7 @@ def process_csv_file(csv_file, action):
                 )
 
                 add_to_non_filter_tables(schema, table_obj)
-                decsion = "No Filter conditions"
+                decision = "No Filter conditions"
 
             # These are the tables with filter conditions.
             if len(line.split(",")) > 3:
@@ -141,7 +138,7 @@ def process_csv_file(csv_file, action):
                 )
 
                 filter_tables.append(table_obj)
-                decsion = "Filter conditions"
+                decision = "Filter conditions"
 
             # If an entry has exactly 3 columns, at this point, it is assumed that the 3rd column
             # specifies "partition-auto" specified. This condition needs to be revisited in case more
@@ -153,9 +150,9 @@ def process_csv_file(csv_file, action):
                 )
                 add_to_non_filter_tables(schema, table_obj)
 
-                decsion = "No Filter conditions & Auto Partition"
+                decision = "No Filter conditions & Auto Partition"
 
-            print(f"{counter} - {line.strip()} - {decsion}")
+            print(f"{counter:>5} - {line.strip():>120} - {decision:>20}")
 
 
 def add_to_non_filter_tables(schema, obj):
