@@ -5,13 +5,9 @@ import numpy as np
 import pandas as pd
 from sql_formatter.core import format_sql
 
-from config import (
-    DATA_VALIDATION_REC_COUNT,
-    DEBUG_DATA_VALIDATION,
-    PARALLEL_THREADS,
-    csv_files_location,
-    show_generated_queries,
-)
+from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
+                    PARALLEL_THREADS, csv_files_location,
+                    show_generated_queries)
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
@@ -90,6 +86,8 @@ def data_validation(src_config, tgt_config):
         primary_keys[table].append(pk)
 
     print(f"-> Primary keys have been identified.")
+    for t in primary_keys.keys():
+        print(f"-> {t:>30} - {primary_keys[t]}")
 
     no_tables = len(tables_migrated)
 
@@ -113,7 +111,7 @@ def data_validation(src_config, tgt_config):
                 args=(
                     schema,
                     table,
-                    primary_keys[table],
+                    primary_keys[table] if table in primary_keys.keys() else [],
                     src_config,
                     tgt_config,
                 ),
@@ -171,20 +169,21 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         - Compares data from both sources.
         - Finally, writes the result to a spreadsheet.
     """
+    no_pk_cols = len(primary_key)
+
+    # At this point, we are not validating tables that don't have
+    # primary keys.
+    if no_pk_cols == 0:
+        print(f"-> {schema}.{table} does not have primary keys, skipping data validation!")
+        return
+
     query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
     source_df = oracle_table_to_df(src_config, query, None)
     primary_key = [x.lower() for x in primary_key]
 
     # Step 4: Capture the primary key data.
     pk_values = source_df[primary_key].values.tolist()
-    no_pk_cols = len(primary_key)
-
-    # At this point, we are not validating tables that don't have
-    # primary keys.
-    if no_pk_cols == 0:
-        print("Table does not have primary keys, skipping data validation!")
-        return
-
+    
     # Step 5: Prepare a query to fetch the data from target DB.
     query = "WITH temp AS ("
     for index, sample_pk_value in enumerate(pk_values):
