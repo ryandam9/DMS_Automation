@@ -59,23 +59,22 @@ usage: app.py [-h] [--profile PROFILE] [--region REGION]
 ### Actions
 Following are different types of actions the script supports.
 
-Action | Description | Sample|
---- | --- | --- | 
-`generate_json_files`|Generate DMS JSON Files|`python app.py --action generate_json_files`|
-`create_dms_tasks`|Create JSON Files, and then creates DMS tasks|
-`list_dms_tasks`|List DMS Tasks|
-`delete_dms_tasks`|Delete DMS tasks|
-`run_dms_tasks`|Run DMS tasks|
+Action | Description|
+--- | --- | 
+`generate_json_files`|Generate DMS JSON Files
+`create_dms_tasks`|Create JSON Files, and then creates DMS tasks
+`list_dms_tasks`|List DMS Tasks
+`delete_dms_tasks`|Delete DMS tasks
+`run_dms_tasks`|Run DMS tasks
 `test_db_connection_from_replication_instance`|Test DB Connections
 `describe_table_statistics`|Describe Table stats
 `create_iam_role_for_dms_cloudwatch_logs`|Creates IAM role needed by DMS to log
-`fetch_cloudwatch_logs_for_a_task`|Fetch Cloudwatch logs for the task|`python app.py --action fetch_cloudwatch_logs_for_a_task --task_arn <task_run>`
-`describe_endpoints`|Describe DMS Endpoints|
-`describe_db_log_files`|Fetch DB Log files|
-`validate_table_structures`|Compares table structures of the Source & Target DB|1. `python app.py --profile test-env --action validate_table_structures --table_name OT.WAREHOUSES`.<br><hr>2. `python app.py --profile test-env --action validate_table_structures --table_name all`
+`fetch_cloudwatch_logs_for_a_task`|Fetch Cloudwatch logs for the task
+`describe_endpoints`|Describe DMS Endpoints
+`describe_db_log_files`|Fetch DB Log files
+`validate_table_structures`|Compares table structures of the Source & Target DB
 `validate_data`|Compares data in the Source & Target DB|
 ****
-
 #### For Quick run
 
 ```sh
@@ -94,11 +93,48 @@ python app.py --action validate_table_structures --table_name <schema.table>
 python app.py --action validate_table_structures --table_name all
 python app.py --action validate_data
 ```
-
 ## To perform Data validation for Oracle Databases
 
 ### For Windows
 - Download Oracle Instance client from `Basic Package`  from `https://www.oracle.com/database/technologies/instant-client/winx64-64-downloads.html`.
+
+- Help
+    - https://oracle.github.io/odpi/doc/installation.html#windows
+
+### For MacOS
+## Oracle client setup
+
+1. Downloaded Basic Package from this link:
+   `https://www.oracle.com/au/database/technologies/instant-client/macos-intel-x86-downloads.html`
+
+2. Unzipped the files
+
+3. MacOS does not allow to open them. So, changed their permissions (for the files that gave an error):
+
+   ```sh
+   xattr -d com.apple.quarantine libclntsh.dylib.19.1
+   xattr -d com.apple.quarantine libnnz19.dylib
+   ...
+   ```
+
+4. Created a symbolic link:
+
+   ```sh
+   ln -s $HOME/Downloads/instantclient_19_8/libclntsh.dylib /Users/rk/anaconda/anaconda3/lib/python3.8/site-packages
+   ```
+
+5. Verified using this:
+
+   ```
+   python
+   >> import cx_Oracle
+   >> cx_Oracle.init_oracle_client(lib_dir=r"/Users/rk/Downloads/instantclient_19_8")
+   ```
+
+   It did not throw an error.
+
+6. This link is helpful
+   `https://stackoverflow.com/questions/69165050/python-dpi-1047-cannot-locate-dlopenlibclntsh-dylib-on-macos/69169723#69169723`
 
 ****
 ## Other Python packages required
