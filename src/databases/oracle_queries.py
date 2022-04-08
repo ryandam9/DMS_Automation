@@ -75,3 +75,13 @@ AND cons.status = 'ENABLED'
 ORDER BY 
     1, 2, 3
 """
+
+oracle_queries['get_tables_in_a_schema'] = """
+SELECT
+    owner
+  , table_name
+FROM
+    ALL_TABLES
+WHERE
+    UPPER(OWNER) = UPPER(:schema)
+"""

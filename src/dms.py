@@ -10,11 +10,13 @@ import pandas as pd
 from tabulate import tabulate
 
 from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
-                    TARGET_DB_ID, csv_files_location, json_files_location,
+                    SOURCE_DB_SECRET_KEY, TARGET_DB_ID, TARGET_DB_SECRET_KEY,
+                    csv_files_location, json_files_location,
                     replication_instance_arn, sns_topic_arn,
                     source_endpoint_arn, target_endpoint_arn, task_arn_file)
 from data_validation import data_validation
-from databases.oracle import oracle_table_metadata, oracle_table_to_df
+from databases.oracle import (oracle_table_metadata, oracle_table_to_df,
+                              oracle_tables)
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_metadata, postgres_table_to_df
 from databases.postgres_queries import postgres_queries
@@ -22,7 +24,7 @@ from generate_html_reports import generate_table_metadata_compare_report
 from process_input_files import process_input_files
 from table_structure_validation import validate_table_structure
 from task_settings import task_settings
-from utils import print_messages, write_to_excel_file
+from utils import print_messages, read_secret, write_to_excel_file
 
 
 def create_dms_tasks(profile, region):
@@ -670,14 +672,21 @@ def get_source_db_connection(profile, region):
     user = endpoints[0][6]
 
     # Fetch DB Password from AWS Secrets Manager
-    password = "admin123"
+    password_key = SOURCE_DB_SECRET_KEY
+    password = read_secret(profile, region, password_key)
+
+    if  len(password) == 0:
+        print_messages([[f"** Password for {password_key} not found in AWS Secrets Manager. **"]], ["Error"])
+        sys.exit(1)
+    else:
+        print(f"-> Password for {password_key} found in AWS Secrets Manager.")
 
     return {
         "db_engine": db_engine,
         "host": host,
         "port": port,
         "service": db,
-        "user": "admin",
+        "user": user,
         "password": password,
     }
 
@@ -693,7 +702,14 @@ def get_target_db_connection(profile, region):
     user = endpoints[1][6]
 
     # Fetch DB Password from AWS Secrets Manager
-    password = "demo1234"
+    password_key = TARGET_DB_SECRET_KEY
+    password = read_secret(profile, region, password_key)
+
+    if  len(password) == 0:
+        print_messages([[f"** Password for {password_key} not found in AWS Secrets Manager. **"]], ["Error"])
+        sys.exit(1)
+    else:
+        print(f"-> Password for {password_key} found in AWS Secrets Manager.")
 
     return {
         "db_engine": db_engine,
@@ -728,6 +744,9 @@ def validate_table_structures_all(profile, region):
                     table = table.strip().upper()
 
                     tables.append({"schema": schema, "table": table})
+
+
+    print(f"-> Table count: {len(tables)}")
 
     source_config = get_source_db_connection(profile, region)
     target_config = get_target_db_connection(profile, region)
@@ -772,3 +791,28 @@ def validate_source_target_data(profile, region):
     target_config = get_target_db_connection(profile, region)
 
     data_validation(source_config, target_config)
+
+
+def prepare_include_file_for_a_schema(profile, region, schema):
+    """
+    
+    """
+    source_config = get_source_db_connection(profile, region)
+    tables_df = oracle_tables(source_config, schema)
+
+    tables = []
+    [tables.append(t[0] + "," + t[1]) for t in tables_df.values.tolist() ]
+
+    print(f"-> {len(tables)} tables identified in schema [{schema}]")
+
+    no_files = len([name for name in os.listdir('../config')])
+    no_files += 1
+
+    # Create an Include file
+    file_path = f"../config/include_{no_files}.csv"
+
+    with open(file_path, "w") as f:
+        f.write("\n".join(tables))
+
+
+    print(f"-> Created Include file: {os.path.abspath(file_path)}")

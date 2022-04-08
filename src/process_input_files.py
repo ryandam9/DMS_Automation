@@ -152,7 +152,7 @@ def process_csv_file(csv_file, action):
 
                 decision = "No Filter conditions & Auto Partition"
 
-            print(f"{counter:>5} - {line.strip():>120} - {decision:>20}")
+            print(f"{counter:>5} - {line.strip():<120} - {decision:>20}")
 
 
 def add_to_non_filter_tables(schema, obj):

@@ -1,8 +1,10 @@
 import sys
+import warnings
 
 import pandas as pd
 import psycopg2
 import sqlalchemy
+from sqlalchemy import exc as sa_exc
 from sqlalchemy.exc import SQLAlchemyError
 from tabulate import tabulate
 from utils import print_messages
@@ -42,6 +44,9 @@ def postgres_table_to_df(config, query, params):
     password = config["password"]
 
     try:
+        with warnings.catch_warnings():
+         warnings.simplefilter("ignore", category=sa_exc.SAWarning)
+         
         engine = sqlalchemy.create_engine(
             f"postgresql+psycopg2://{user}:{password}@{host}/{service}"
         )

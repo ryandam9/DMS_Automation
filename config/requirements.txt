@@ -1,9 +1,9 @@
 cx_Oracle
-tabulate
-openpyxl
-textwrap3
-sql-formatter
-pandas
-sqlalchemy
-psycopg2
 numpy
+openpyxl
+pandas
+psycopg2
+sqlalchemy
+sql-formatter
+tabulate
+textwrap3

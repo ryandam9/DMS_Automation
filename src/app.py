@@ -2,24 +2,19 @@ import argparse
 import os
 import platform
 import sys
-import warnings
 from pathlib import Path
-
-from sqlalchemy import exc as sa_exc
 
 from config import DEFAULT_REGION, oracle_instance_client_path
 from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
                  delete_dms_tasks, describe_db_log_files, describe_endpoints,
                  describe_table_statistics, fetch_cloudwatch_logs_for_a_task,
-                 list_dms_tasks, run_dms_tasks, test_db_connection,
+                 list_dms_tasks, prepare_include_file_for_a_schema,
+                 run_dms_tasks, test_db_connection,
                  validate_source_target_data,
                  validate_table_structure_single_table,
                  validate_table_structures_all)
 from process_input_files import process_input_files
-from utils import get_aws_cli_profile, print_messages
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", category=sa_exc.SAWarning)
+from utils import get_aws_cli_profile, print_messages, read_secret
 
 current_platform = platform.system().lower()
 
@@ -44,14 +39,18 @@ actions = [
     "[11] describe_db_log_files",
     "[12] validate_table_structures",
     "[13] validate_data",
+    "[14] prepare_include_file_for_a_schema"
 ]
 
 parser.add_argument(
-    "--action", help="Specify the action to be performed " + ", ".join(actions), metavar=''
+    "--action",
+    help="Specify the action to be performed " + ", ".join(actions),
+    metavar="",
 )
 
 parser.add_argument("--task_arn", help="Specify the task arn", type=str)
 parser.add_argument("--table_name", help="Specify schema & table name", type=str)
+parser.add_argument("--schema", help="Specify a schema", type=str)
 
 args = parser.parse_args()
 
@@ -230,21 +229,22 @@ if (
 
 if args.action == "validate_table_structures" or args.action == "12":
     if args.table_name is None:
-        msg1 = "Please specify a table name in <SCHEMA.TABLE NAME> format"
-        msg2 = "Usage: python app.py --action validate_source_target_structures --table_name <schema>.<table>"
-        print_messages([[msg1], [msg2]], ["Error"])
-    else:
-        msg1 = "The 'validate_table_structures' action currently supports the following databases:"
-        msg2 = "SOURCE DB: Oracle"
-        msg3 = "TARGET DB: Postgres"
-        print_messages([[msg1], [msg2], [msg3]], ["INFO"])
+        args.table_name = "all"
 
-        if args.table_name == "all":
-            validate_table_structures_all(args.profile, args.region)
-        else:
-            validate_table_structure_single_table(
-                args.profile, args.region, args.table_name, True
-            )
+    msg1 = "The 'validate_table_structures' action currently supports the following databases:"
+    msg2 = "SOURCE DB: Oracle"
+    msg3 = "TARGET DB: Postgres"
+    print_messages([[msg1], [msg2], [msg3]], ["INFO"])
+
+    if args.table_name == "all":
+        validate_table_structures_all(args.profile, args.region)
+    else:
+        validate_table_structure_single_table(
+            args.profile,
+            args.region,
+            args.table_name,
+            True,
+        )
 # --------------------------------------------------------------------------------------------------#
 # Validate data between SOURCE & TARGET DBs                                                         #
 # --------------------------------------------------------------------------------------------------#
@@ -257,3 +257,15 @@ if args.action == "validate_data" or args.action == "13":
     print_messages([[msg1], [msg2], [msg3], [msg4], [msg5]], ["INFO"])
 
     validate_source_target_data(args.profile, args.region)
+
+
+# --------------------------------------------------------------------------------------------------#
+# Prepare Include file for a given schema                                                           #
+# --------------------------------------------------------------------------------------------------#
+if args.action == "prepare_include_file_for_a_schema" or args.action == "14":
+    if args.schema is None:
+         msg1 = "Please specify a schema"
+         print_messages([[msg1]], ["Error"])
+         sys.exit(1)
+
+    prepare_include_file_for_a_schema(args.profile, args.region, args.schema)

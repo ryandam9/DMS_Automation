@@ -15,6 +15,11 @@ DEFAULT_REGION = "us-east-2"
 SOURCE_DB_ID = "database-1"
 TARGET_DB_ID = "demo"
 
+# Secret manager Value
+# Store the secret in the secret manager as a Key/Value pair.
+SOURCE_DB_SECRET_KEY = "oracle_1"
+TARGET_DB_SECRET_KEY = "postgres_1"
+
 # This variable controls how many RDS DB log files to be fetched
 DB_LOG_FILE_COUNT = 1
 
@@ -37,4 +42,4 @@ json_files_location = "../json_files"
 task_arn_file = "../config/task_arn_file.txt"
 
 # Update this variable to point to the Oracle Instant Client.
-oracle_instance_client_path = r"C:\Users\ravis\Desktop\ravi\instantclient_21_"
+oracle_instance_client_path = r"C:\Users\ravis\Desktop\ravi\instantclient_21_3"

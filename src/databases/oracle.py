@@ -1,8 +1,10 @@
 import sys
+import warnings
 
 import cx_Oracle
 import pandas as pd
 import sqlalchemy
+from sqlalchemy import exc as sa_exc
 from sqlalchemy.exc import SQLAlchemyError
 from tabulate import tabulate
 from utils import print_messages
@@ -37,18 +39,20 @@ def oracle_table_to_df(config, query, params):
     password = config["password"]
 
     try:
-        engine = sqlalchemy.create_engine(
-            f"oracle+cx_oracle://{user}:{password}@{host}:{port}/?service_name={service}",
-            arraysize=1000,
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=sa_exc.SAWarning)
 
-        if params is None:
-            df = pd.read_sql(query, engine)
-            return df
-        else:
-            df = pd.read_sql(query, engine, params=params)
-            return df
+            engine = sqlalchemy.create_engine(
+                f"oracle+cx_oracle://{user}:{password}@{host}:{port}/?service_name={service}",
+                arraysize=1000,
+            )
 
+            if params is None:
+                df = pd.read_sql(query, engine)
+                return df
+            else:
+                df = pd.read_sql(query, engine, params=params)
+                return df
     except SQLAlchemyError as e:
         print_messages([[str(e)]], ["Error @ oracle_table_to_df()"])
         sys.exit(1)
@@ -117,5 +121,12 @@ def oracle_table_metadata(config, schema, table, print_result=False):
         print(
             tabulate(query_result[1:], headers=query_result[0], tablefmt="fancy_grid")
         )
+
+    return query_result
+
+
+def oracle_tables(config, schema):
+    query = oracle_queries["get_tables_in_a_schema"]
+    query_result = oracle_table_to_df(config, query, [schema])
 
     return query_result
