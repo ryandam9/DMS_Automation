@@ -4,6 +4,7 @@ import re
 import sys
 import textwrap
 from datetime import datetime
+from nis import cat
 
 import boto3
 import pandas as pd
@@ -37,7 +38,7 @@ def create_dms_tasks(profile, region):
 
     # Generate JSON file first
     process_input_files()
-    
+
     arn_list = []
     count = 0
 
@@ -113,7 +114,7 @@ def wait_for_status_change(dms, waiter_state, arn_list):
     )
 
 
-def list_dms_tasks(profile, region):
+def list_dms_tasks(profile, region, display_result=False):
     """
     Prints the list of DMS tasks
     """
@@ -165,14 +166,22 @@ def list_dms_tasks(profile, region):
                 err_msg,
             ]
         )
-
-    print(
-        tabulate(
-            tasks,
-            headers=["Task ID", "Task ARN", "Status", "Start Date", "Error Message"],
-            tablefmt="fancy_grid",
+    if display_result:
+        print(
+            tabulate(
+                tasks,
+                headers=[
+                    "Task ID",
+                    "Task ARN",
+                    "Status",
+                    "Start Date",
+                    "Error Message",
+                ],
+                tablefmt="fancy_grid",
+            )
         )
-    )
+
+    return tasks
 
 
 def run_dms_tasks(profile, region):
@@ -675,8 +684,11 @@ def get_source_db_connection(profile, region):
     password_key = SOURCE_DB_SECRET_KEY
     password = read_secret(profile, region, password_key)
 
-    if  len(password) == 0:
-        print_messages([[f"** Password for {password_key} not found in AWS Secrets Manager. **"]], ["Error"])
+    if len(password) == 0:
+        print_messages(
+            [[f"** Password for {password_key} not found in AWS Secrets Manager. **"]],
+            ["Error"],
+        )
         sys.exit(1)
     else:
         print(f"-> Password for {password_key} found in AWS Secrets Manager.")
@@ -705,8 +717,11 @@ def get_target_db_connection(profile, region):
     password_key = TARGET_DB_SECRET_KEY
     password = read_secret(profile, region, password_key)
 
-    if  len(password) == 0:
-        print_messages([[f"** Password for {password_key} not found in AWS Secrets Manager. **"]], ["Error"])
+    if len(password) == 0:
+        print_messages(
+            [[f"** Password for {password_key} not found in AWS Secrets Manager. **"]],
+            ["Error"],
+        )
         sys.exit(1)
     else:
         print(f"-> Password for {password_key} found in AWS Secrets Manager.")
@@ -744,7 +759,6 @@ def validate_table_structures_all(profile, region):
                     table = table.strip().upper()
 
                     tables.append({"schema": schema, "table": table})
-
 
     print(f"-> Table count: {len(tables)}")
 
@@ -794,18 +808,16 @@ def validate_source_target_data(profile, region):
 
 
 def prepare_include_file_for_a_schema(profile, region, schema):
-    """
-    
-    """
+    """ """
     source_config = get_source_db_connection(profile, region)
     tables_df = oracle_tables(source_config, schema)
 
     tables = []
-    [tables.append(t[0] + "," + t[1]) for t in tables_df.values.tolist() ]
+    [tables.append(t[0] + "," + t[1]) for t in tables_df.values.tolist()]
 
     print(f"-> {len(tables)} tables identified in schema [{schema}]")
 
-    no_files = len([name for name in os.listdir('../config')])
+    no_files = len([name for name in os.listdir("../config")])
     no_files += 1
 
     # Create an Include file
@@ -814,5 +826,36 @@ def prepare_include_file_for_a_schema(profile, region, schema):
     with open(file_path, "w") as f:
         f.write("\n".join(tables))
 
-
     print(f"-> Created Include file: {os.path.abspath(file_path)}")
+
+
+def delete_all_dms_tasks(profile, region):
+    """
+    Delete all DMS tasks
+    """
+    dms_tasks = list_dms_tasks(profile, region)
+
+    session = boto3.Session(profile_name=profile, region_name=region)
+    dms = session.client("dms")
+
+    count = 0
+    arns_to_be_deleted = []
+
+    for task in dms_tasks:
+        arn = task[1].strip("\n")
+        arns_to_be_deleted.append(arn)
+
+        try:
+            response = dms.delete_replication_task(ReplicationTaskArn=arn)
+            print("Task: {} deletion in progress...".format(arn))
+        except Exception as error:
+            count += 1
+            msg1 = "Error deleting task with ARN: {}".format(arn)
+            msg2 = str(error)
+            print_messages([[msg1], [msg2]], ["Error"])
+
+    if count > 0:
+        print(f"{count} errors encountered while deleting DMS tasks.")
+    else:
+        wait_for_status_change(dms, "replication_task_deleted", arns_to_be_deleted)
+        print(f"{len(arns_to_be_deleted)} tasks have been deleted!")

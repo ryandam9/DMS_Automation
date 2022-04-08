@@ -2,15 +2,16 @@ import argparse
 import os
 import platform
 import sys
+from dis import dis
 from pathlib import Path
 
 from config import DEFAULT_REGION, oracle_instance_client_path
 from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
-                 delete_dms_tasks, describe_db_log_files, describe_endpoints,
-                 describe_table_statistics, fetch_cloudwatch_logs_for_a_task,
-                 list_dms_tasks, prepare_include_file_for_a_schema,
-                 run_dms_tasks, test_db_connection,
-                 validate_source_target_data,
+                 delete_all_dms_tasks, delete_dms_tasks, describe_db_log_files,
+                 describe_endpoints, describe_table_statistics,
+                 fetch_cloudwatch_logs_for_a_task, list_dms_tasks,
+                 prepare_include_file_for_a_schema, run_dms_tasks,
+                 test_db_connection, validate_source_target_data,
                  validate_table_structure_single_table,
                  validate_table_structures_all)
 from process_input_files import process_input_files
@@ -39,7 +40,8 @@ actions = [
     "[11] describe_db_log_files",
     "[12] validate_table_structures",
     "[13] validate_data",
-    "[14] prepare_include_file_for_a_schema"
+    "[14] prepare_include_file_for_a_schema",
+    "[15] delete_all_dms_tasks",
 ]
 
 parser.add_argument(
@@ -140,7 +142,7 @@ if args.action == "create_dms_tasks" or args.action == "2":
 # List DMS tasks                                                                                    #
 # --------------------------------------------------------------------------------------------------#
 if args.action == "list_dms_tasks" or args.action == "3":
-    list_dms_tasks(args.profile, args.region)
+    list_dms_tasks(args.profile, args.region, display_result=True)
 
 # --------------------------------------------------------------------------------------------------#
 # Delete DMS tasks                                                                                  #
@@ -269,3 +271,9 @@ if args.action == "prepare_include_file_for_a_schema" or args.action == "14":
          sys.exit(1)
 
     prepare_include_file_for_a_schema(args.profile, args.region, args.schema)
+
+# --------------------------------------------------------------------------------------------------#
+# Delete all DMS Tasks                                                                              #
+# --------------------------------------------------------------------------------------------------#
+if args.action == "delete_all_dms_tasks" or args.action == "15":
+    delete_all_dms_tasks(args.profile, args.region)
