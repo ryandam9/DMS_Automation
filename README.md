@@ -102,7 +102,6 @@ python app.py --action validate_data
     - https://oracle.github.io/odpi/doc/installation.html#windows
 
 ### For MacOS
-## Oracle client setup
 
 1. Downloaded Basic Package from this link:
    `https://www.oracle.com/au/database/technologies/instant-client/macos-intel-x86-downloads.html`
