@@ -56,10 +56,13 @@ def postgres_table_to_df(config, query, params):
             return df
         else:
             df = pd.read_sql(query, engine, params=params)
-            return df
+            return (df, 'success')
 
     except SQLAlchemyError as e:
-        print(e)
+        error = str(e.__dict__['orig'])
+        print(error)
+
+        return (None, 'failure')
 
 
 def postgres_execute_query(config, query, parameters):

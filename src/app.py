@@ -267,7 +267,8 @@ if args.action == "validate_data" or args.action == "13":
 if args.action == "prepare_include_file_for_a_schema" or args.action == "14":
     if args.schema is None:
          msg1 = "Please specify a schema"
-         print_messages([[msg1]], ["Error"])
+         msg2 = "Sample: python app.py --action 14 --schema SYS"
+         print_messages([[msg1], [msg2]], ["Error"])
          sys.exit(1)
 
     prepare_include_file_for_a_schema(args.profile, args.region, args.schema)

@@ -27,7 +27,7 @@ DB_LOG_FILE_COUNT = 1
 DATA_VALIDATION_REC_COUNT = 1000
 
 # How many data validation threads can run at the same time?
-PARALLEL_THREADS = 5
+PARALLEL_THREADS = 100
 
 # When true, the data validation comparison will be logged.
 DEBUG_DATA_VALIDATION = True

@@ -179,6 +179,11 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
 
     query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
     source_df = oracle_table_to_df(src_config, query, None)
+
+    if len(source_df) == 0:
+        print("-> No data found in source DB, skipping data validation!")
+        return
+
     primary_key = [x.lower() for x in primary_key]
 
     # Step 4: Capture the primary key data.
@@ -224,7 +229,15 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         print("\n")
 
     # Step 6: Get the data from target table using the primary key data.
-    target_df = postgres_table_to_df(tgt_config, query, None)
+    target_df, status = postgres_table_to_df(tgt_config, query, None)
+
+    if status == 'failure':
+        print(f"{schema}.{table} Table does not exist")
+        return
+
+    if len(target_df) == 0:
+        print(f"-> No data found in target DB, skipping data validation!")
+        return
 
     # Step 7: Compare the data between source & target tables.
     # We're going to combine the Source & Target Dataframes now.
