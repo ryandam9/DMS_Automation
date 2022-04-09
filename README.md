@@ -52,6 +52,7 @@ usage: app.py [-h] [--profile PROFILE] [--region REGION]
                   validate_table_structures,
                   validate_data,
                   prepare_include_file_for_a_schema,
+                  delete_all_dms_tasks
                   }
               ]
               [--task_arn TASK_ARN] [--table_name TABLE_NAME]
