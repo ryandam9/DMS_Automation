@@ -1,4 +1,5 @@
 import os
+import platform
 import sys
 import warnings
 
@@ -6,6 +7,7 @@ import cx_Oracle
 import pandas as pd
 import sqlalchemy
 from click import echo
+from config import SHOW_CONNECTION_STRING, SQL_ALCHEMY_ECHO_MODE
 from sqlalchemy import exc as sa_exc
 from sqlalchemy.exc import SQLAlchemyError
 from tabulate import tabulate
@@ -40,7 +42,13 @@ def oracle_table_to_df(config, query, params):
     user = config["user"]
     password = config["password"]
 
-    print(f"Inside oracle_table_to_df(): PATH: {os.environ['PATH']}")
+    if 'windows' in platform.system().lower():
+        client_entry = os.environ['PATH'].split(";")[0]
+    else:
+        client_entry = os.environ['PATH'].split(":")[0]
+
+    if SQL_ALCHEMY_ECHO_MODE:
+        print(f"-> Inside oracle_table_to_df(): PATH: {client_entry}")
 
     try:
         with warnings.catch_warnings():
@@ -49,7 +57,7 @@ def oracle_table_to_df(config, query, params):
             engine = sqlalchemy.create_engine(
                 f"oracle+cx_oracle://{user}:{password}@{host}:{port}/?service_name={service}",
                 arraysize=1000,
-                echo=True
+                echo=SQL_ALCHEMY_ECHO_MODE
             )
 
             if params is None:
@@ -59,8 +67,14 @@ def oracle_table_to_df(config, query, params):
                 df = pd.read_sql(query, engine, params=params)
                 return df
     except SQLAlchemyError as e:
-        print_messages([[str(e)]], ["Error @ oracle_table_to_df()"])
-        sys.exit(1)
+        if SHOW_CONNECTION_STRING:
+            msg1 = "VERIFY IF THE CONNECTION STRING IS CORRECT OR NOT !!!"
+            msg2 = f"USER: {user}, PASSWORD: {password}, HOST: {host}, PORT: {port}, SERVICE: {service}"
+            msg3 = f"Client path: {client_entry}"
+            print_messages([[msg1], [msg2], [msg3]], ["Error"])
+            sys.exit(1)
+
+        raise e
 
 
 def oracle_execute_query(config, query, parameters):

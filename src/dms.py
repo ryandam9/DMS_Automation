@@ -10,10 +10,11 @@ import pandas as pd
 from tabulate import tabulate
 
 from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
-                    SOURCE_DB_SECRET_KEY, TARGET_DB_ID, TARGET_DB_SECRET_KEY,
-                    csv_files_location, json_files_location,
-                    replication_instance_arn, sns_topic_arn,
-                    source_endpoint_arn, target_endpoint_arn, task_arn_file)
+                    SOURCE_DB_PWD, SOURCE_DB_SECRET_KEY, TARGET_DB_ID,
+                    TARGET_DB_PWD, TARGET_DB_SECRET_KEY, csv_files_location,
+                    json_files_location, replication_instance_arn,
+                    sns_topic_arn, source_endpoint_arn, target_endpoint_arn,
+                    task_arn_file)
 from data_validation import data_validation
 from databases.oracle import (oracle_table_metadata, oracle_table_to_df,
                               oracle_tables)
@@ -682,18 +683,23 @@ def get_source_db_connection(profile, region):
     port = endpoints[0][5]
     user = endpoints[0][6]
 
-    # Fetch DB Password from AWS Secrets Manager
-    password_key = SOURCE_DB_SECRET_KEY
-    password = read_secret(profile, region, password_key)
+    if len(SOURCE_DB_PWD.strip()) == 0:
+        # Fetch DB Password from AWS Secrets Manager
+        password_key = SOURCE_DB_SECRET_KEY
+        password = read_secret(profile, region, password_key)
 
-    if len(password) == 0:
-        print_messages(
-            [[f"** Password for {password_key} not found in AWS Secrets Manager. **"]],
-            ["Error"],
-        )
-        sys.exit(1)
+        if len(password) == 0:
+            print_messages(
+                [[f"** Password for {password_key} not found in AWS Secrets Manager. **"]],
+                ["Error"],
+            )
+            sys.exit(1)
+        else:
+            print(
+                f"-> Password for {password_key} found in AWS Secrets Manager.")
     else:
-        print(f"-> Password for {password_key} found in AWS Secrets Manager.")
+        password = SOURCE_DB_PWD
+        print(f"-> BAD PRACTICE: Source DB Password read from config file!!!")
 
     return {
         "db_engine": db_engine,
@@ -715,18 +721,23 @@ def get_target_db_connection(profile, region):
     port = endpoints[1][5]
     user = endpoints[1][6]
 
-    # Fetch DB Password from AWS Secrets Manager
-    password_key = TARGET_DB_SECRET_KEY
-    password = read_secret(profile, region, password_key)
+    if len(TARGET_DB_PWD.strip()) == 0:
+        # Fetch DB Password from AWS Secrets Manager
+        password_key = TARGET_DB_SECRET_KEY
+        password = read_secret(profile, region, password_key)
 
-    if len(password) == 0:
-        print_messages(
-            [[f"** Password for {password_key} not found in AWS Secrets Manager. **"]],
-            ["Error"],
-        )
-        sys.exit(1)
+        if len(password) == 0:
+            print_messages(
+                [[f"** Password for {password_key} not found in AWS Secrets Manager. **"]],
+                ["Error"],
+            )
+            sys.exit(1)
+        else:
+            print(
+                f"-> Password for {password_key} found in AWS Secrets Manager.")
     else:
-        print(f"-> Password for {password_key} found in AWS Secrets Manager.")
+        password = TARGET_DB_PWD
+        print(f"-> BAD PRACTICE: Target DB Password read from config file!!!")
 
     return {
         "db_engine": db_engine,

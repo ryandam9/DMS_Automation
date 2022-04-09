@@ -1,15 +1,17 @@
 import os
+import sys
 from datetime import datetime
-from doctest import DocFileTest
 
 import numpy as np
 import pandas as pd
+from sqlalchemy.exc import SQLAlchemyError
 
 from databases.oracle import oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
 from databases.postgres_queries import postgres_queries
 from generate_html_reports import generate_table_metadata_compare_report
+from utils import print_messages
 
 
 def oracle_get_table_metadata(tables, db_config):
@@ -30,9 +32,13 @@ def oracle_get_table_metadata(tables, db_config):
     query = query.replace("<temp_placeholder>", sub_query)
 
     # Execute the query
-    df = oracle_table_to_df(db_config, query, None)
-
-    return df
+    try:
+        df = oracle_table_to_df(db_config, query, None)
+        return df
+    except SQLAlchemyError as e:
+        error = str(e.__dict__['orig'])
+        print_messages([[error]], ["Error connecting to Source DB"])
+        sys.exit(1)
 
 
 def postgres_get_table_metadata(tables, db_config):
@@ -53,9 +59,13 @@ def postgres_get_table_metadata(tables, db_config):
     query = query.replace("<temp_placeholder>", sub_query)
 
     # Execute the query
-    df = postgres_table_to_df(db_config, query, None)
-
-    return df
+    try:
+        df = postgres_table_to_df(db_config, query, None)
+        return df
+    except SQLAlchemyError as e:
+        error = str(e.__dict__['orig'])
+        print_messages([[error]], ["Error connecting to Target DB"])
+        sys.exit(1)
 
 
 def validate_table_structure(tables, src_db_config, tgt_db_config):
@@ -66,6 +76,7 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
         src_df = postgres_get_table_metadata(tables, tgt_db_config)
 
     print("-> Metadata gathered from Source DB")
+    print(f"-> Size: {len(src_df)}")
 
     if tgt_db_config["db_engine"] == "Oracle":
         tgt_df = oracle_get_table_metadata(tables, src_db_config)
@@ -105,6 +116,7 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
     tgt_df.columns = tgt_df_cols
 
     print("-> Metadata gathered from Target DB")
+    print(f"-> Size: {len(tgt_df)}")
 
     # Join the two dataframes on the schema, table & column names.
     src_join_keys = ["src_schema", "src_table", "src_column"]
@@ -128,9 +140,11 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
         + ".xlsx"
     )
 
-    combined_df.to_excel(csv_file, sheet_name="Structure comparison", index=False)
+    combined_df.to_excel(
+        csv_file, sheet_name="Structure comparison", index=False)
 
     print(f"-> CSV report generated: {os.path.abspath(csv_file)}")
 
     # Generate a HTML report
-    generate_table_metadata_compare_report(combined_df, src_db_config, tgt_db_config)
+    generate_table_metadata_compare_report(
+        combined_df, src_db_config, tgt_db_config)

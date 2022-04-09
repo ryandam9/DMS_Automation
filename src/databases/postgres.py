@@ -4,6 +4,7 @@ import warnings
 import pandas as pd
 import psycopg2
 import sqlalchemy
+from config import SQL_ALCHEMY_ECHO_MODE
 from sqlalchemy import exc as sa_exc
 from sqlalchemy.exc import SQLAlchemyError
 from tabulate import tabulate
@@ -48,7 +49,7 @@ def postgres_table_to_df(config, query, params):
             warnings.simplefilter("ignore", category=sa_exc.SAWarning)
 
         engine = sqlalchemy.create_engine(
-            f"postgresql+psycopg2://{user}:{password}@{host}/{service}", echo=True,
+            f"postgresql+psycopg2://{user}:{password}@{host}/{service}", echo=SQL_ALCHEMY_ECHO_MODE,
         )
 
         if params is None:
@@ -60,7 +61,6 @@ def postgres_table_to_df(config, query, params):
 
     except SQLAlchemyError as e:
         error = str(e.__dict__['orig'])
-        print(error)
         raise e
 
 

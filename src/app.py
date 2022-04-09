@@ -51,7 +51,8 @@ parser.add_argument(
 )
 
 parser.add_argument("--task_arn", help="Specify the task arn", type=str)
-parser.add_argument("--table_name", help="Specify schema & table name", type=str)
+parser.add_argument(
+    "--table_name", help="Specify schema & table name", type=str)
 parser.add_argument("--schema", help="Specify a schema", type=str)
 
 args = parser.parse_args()
@@ -183,7 +184,8 @@ if args.action == "fetch_cloudwatch_logs_for_a_task" or args.action == "9":
         msg2 = "Usage: python app.py --action fetch_cloudwatch_logs_for_a_task --task_arn <task arn>"
         print_messages([[msg1], [msg2]], ["Error"])
     else:
-        fetch_cloudwatch_logs_for_a_task(args.profile, args.region, args.task_arn)
+        fetch_cloudwatch_logs_for_a_task(
+            args.profile, args.region, args.task_arn)
 
 # --------------------------------------------------------------------------------------------------#
 # Describe DMS End points                                                                           #
@@ -266,10 +268,10 @@ if args.action == "validate_data" or args.action == "13":
 # --------------------------------------------------------------------------------------------------#
 if args.action == "prepare_include_file_for_a_schema" or args.action == "14":
     if args.schema is None:
-         msg1 = "Please specify a schema"
-         msg2 = "Sample: python app.py --action 14 --schema SYS"
-         print_messages([[msg1], [msg2]], ["Error"])
-         sys.exit(1)
+        msg1 = "Please specify a schema"
+        msg2 = "Sample: python app.py --action 14 --schema SYS"
+        print_messages([[msg1], [msg2]], ["Error"])
+        sys.exit(1)
 
     prepare_include_file_for_a_schema(args.profile, args.region, args.schema)
 

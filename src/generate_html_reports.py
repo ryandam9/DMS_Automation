@@ -27,17 +27,17 @@ def generate_table_metadata_compare_report(df, src_db_config, tgt_db_config):
     )
 
     html_template = (html_template
-        .replace("[src_db_engine]", src_db_config['db_engine'])
-        .replace("[src_host]", src_db_config['host'])
-        .replace("[src_port]", str(src_db_config['port']))
-        .replace("[src_database]", src_db_config['service'])
-        .replace("[src_user]", src_db_config['user'])
-        .replace("[tgt_db_engine]", tgt_db_config['db_engine'])
-        .replace("[tgt_host]", tgt_db_config['host'])
-        .replace("[tgt_port]", str(tgt_db_config['port']))
-        .replace("[tgt_database]", tgt_db_config['service'])
-        .replace("[tgt_user]", tgt_db_config['user'])
-    )
+                     .replace("[src_db_engine]", src_db_config['db_engine'])
+                     .replace("[src_host]", src_db_config['host'])
+                     .replace("[src_port]", str(src_db_config['port']))
+                     .replace("[src_database]", src_db_config['service'])
+                     .replace("[src_user]", src_db_config['user'])
+                     .replace("[tgt_db_engine]", tgt_db_config['db_engine'])
+                     .replace("[tgt_host]", tgt_db_config['host'])
+                     .replace("[tgt_port]", str(tgt_db_config['port']))
+                     .replace("[tgt_database]", tgt_db_config['service'])
+                     .replace("[tgt_user]", tgt_db_config['user'])
+                     )
 
     current_time = (
         datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")
@@ -55,29 +55,36 @@ def generate_table_metadata_compare_report(df, src_db_config, tgt_db_config):
 def generate_data_validation_report(data):
     """
     Generates a HTML report for Data validation.
-    
+
     """
     html_table_data = ""
 
     for row in data:
-        schema, table, no_records_validated, no_records_differences, columns = row.split(":")
-        
+        try:
+            schema, table, no_records_validated, no_records_differences, columns, msg = row.split(
+                "~")
+        except Exception as erro:
+            print(row)
+            continue
+
         html_row = "<tr>"
         html_row += f"<td>{schema}</td>"
         html_row += f"<td>{table}</td>"
         html_row += f"<td>{no_records_validated}</td>"
         html_row += f"<td>{no_records_differences}</td>"
-        
+
         if len(columns.strip()) > 0:
             ul = "<ul>"
             for col in columns.split(","):
                 ul += f"<li>{col}</li>"
             ul += "</ul>"
-            
+
             html_row += f"<td>{ul}</td>"
         else:
             html_row += f"<td></td>"
-        
+
+        html_row += f"<td>{msg}</td>"
+
         html_row += "</tr>"
         html_table_data += html_row
 
