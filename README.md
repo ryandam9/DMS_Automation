@@ -167,8 +167,25 @@ cd DMS_Automation/config
 pip install -r requirements.txt
 ```
 ****
-## Settings in `src/config.py` file
+## Using this tool
+Before running the script:
 
-- `oracle_instance_client_path`
-   - Update this to point to Oracle client path.
+- Configure DMS Endpoints using AWS Console
+- Update the `src/config.py` file
+   - `oracle_instance_client_path` - Update this to point to Oracle client path.
+   - Update the following:
+      - `replication_instance_arn`
+      - `source_endpoint_arn`
+      - `target_endpoint_arn`
+
+### Setting up passwords
+The tool needs to connect to databases for the following actions. 
+- `12. validate_table_structures`
+- `13. validate_data`
+- `14. prepare_include_file_for_a_schema`
+
+In general, to connect to a database, following properties are needed:
+
+
+
 ****

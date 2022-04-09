@@ -72,7 +72,7 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
     """ """
     if src_db_config["db_engine"] == "Oracle":
         src_df = oracle_get_table_metadata(tables, src_db_config)
-    elif src_db_config["db_engine"] == "PostgreSQL":
+    elif "PostgreSQL" in src_db_config["db_engine"]:
         src_df = postgres_get_table_metadata(tables, tgt_db_config)
 
     print("-> Metadata gathered from Source DB")
@@ -80,7 +80,7 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
 
     if tgt_db_config["db_engine"] == "Oracle":
         tgt_df = oracle_get_table_metadata(tables, src_db_config)
-    elif tgt_db_config["db_engine"] == "PostgreSQL":
+    elif "PostgreSQL" in tgt_db_config["db_engine"]:
         tgt_df = postgres_get_table_metadata(tables, tgt_db_config)
 
     # Change Dataframe column names, so that, we don't have to depend on
@@ -140,9 +140,11 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
         + ".xlsx"
     )
 
-    combined_df.to_excel(csv_file, sheet_name="Structure comparison", index=False)
+    combined_df.to_excel(
+        csv_file, sheet_name="Structure comparison", index=False)
 
     print(f"-> CSV report generated: {os.path.abspath(csv_file)}")
 
     # Generate a HTML report
-    generate_table_metadata_compare_report(combined_df, src_db_config, tgt_db_config)
+    generate_table_metadata_compare_report(
+        combined_df, src_db_config, tgt_db_config)

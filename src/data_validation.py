@@ -7,7 +7,8 @@ import pandas as pd
 from sql_formatter.core import format_sql
 from sqlalchemy.exc import SQLAlchemyError
 
-from config import DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION, PARALLEL_THREADS
+from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
+                    PARALLEL_THREADS)
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
@@ -405,7 +406,7 @@ def generate_db_specific_inline_view(db_engine, tables):
 
         if db_engine == "Oracle":
             inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name FROM DUAL "
-        elif db_engine == "PostgreSQL":
+        elif "PostgreSQL" in db_engine:
             inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name "
 
     return inline_view
@@ -447,7 +448,7 @@ def read_data_from_target_db(tgt_config, query):
     """ """
     db_engine = tgt_config["db_engine"]
 
-    if db_engine == "PostgreSQL":
+    if "PostgreSQL" in db_engine:
         try:
             target_df = postgres_table_to_df(tgt_config, query, None)
             return target_df
