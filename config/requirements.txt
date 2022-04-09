@@ -1,3 +1,4 @@
+boto3
 cx_Oracle
 numpy
 openpyxl
@@ -7,4 +8,3 @@ sqlalchemy
 sql-formatter
 tabulate
 textwrap3
-boto3
