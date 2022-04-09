@@ -7,3 +7,4 @@ sqlalchemy
 sql-formatter
 tabulate
 textwrap3
+boto3

@@ -6,7 +6,6 @@ import warnings
 import cx_Oracle
 import pandas as pd
 import sqlalchemy
-from click import echo
 from config import SHOW_CONNECTION_STRING, SQL_ALCHEMY_ECHO_MODE
 from sqlalchemy import exc as sa_exc
 from sqlalchemy.exc import SQLAlchemyError
