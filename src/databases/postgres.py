@@ -48,7 +48,7 @@ def postgres_table_to_df(config, query, params):
             warnings.simplefilter("ignore", category=sa_exc.SAWarning)
 
         engine = sqlalchemy.create_engine(
-            f"postgresql+psycopg2://{user}:{password}@{host}/{service}"
+            f"postgresql+psycopg2://{user}:{password}@{host}/{service}", echo=True,
         )
 
         if params is None:

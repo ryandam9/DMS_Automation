@@ -1,4 +1,5 @@
 import os
+import sys
 import threading
 
 import numpy as np
@@ -44,28 +45,17 @@ def data_validation(src_config, tgt_config):
     6. Get the data from target table using the primary key data.
     7. Compare the data from source & target tables.
     """
-
     # Step 1: Get the list of tables that are being migrated
     tables = get_tables_to_validate()
     print(f"-> Tables have been identified. Count: {len(tables)}")
 
     # Step 2: Using DB catalog tables, identify primary key columns for each
     # table from source DB.
-    primary_keys_query = oracle_queries["get_primary_key"]
-    inline_view = ""
-
-    for index, table in enumerate(tables):
-        if index > 0:
-            inline_view += " UNION "
-
-        inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name FROM DUAL "
-
-    query = primary_keys_query.replace("<temp_placeholder>", inline_view)
-
-    # Execute the query
-    df = oracle_table_to_df(src_config, query, None)
+    df = fetch_primary_key_column_names(src_config, tables)
 
     # This dictionary will hold the primary key data for each table
+    #  - Key: Table name
+    #  - Value: A list of primary key column names
     primary_keys = {}
 
     for row in df.values.tolist():
@@ -168,11 +158,11 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
             f"-> {schema}.{table} does not have primary keys, skipping data validation!")
         return
 
-    query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
-    source_df = oracle_table_to_df(src_config, query, None)
+    source_df = read_data_from_source_db(src_config, schema, table)
 
     if len(source_df) == 0:
-        print("-> No data found in source DB, skipping data validation!")
+        print(
+            f"-> {schema}.{table} does not have data in source DB, skipping data validation!")
         return
 
     primary_key = [x.lower() for x in primary_key]
@@ -205,7 +195,7 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
 
         query += q
 
-    query += ")"
+    query += ") "
     query += f"SELECT a.* FROM {schema}.{table} a, temp WHERE "
 
     for i in range(no_pk_cols):
@@ -221,7 +211,7 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
 
     # Step 6: Get the data from target table using the primary key data.
     try:
-        target_df = postgres_table_to_df(tgt_config, query, None)
+        target_df = read_data_from_target_db(tgt_config, query)
     except Exception as err:
         print(f"-> Error while fetching data from target DB: {err}")
         return
@@ -384,8 +374,48 @@ def generate_db_specific_inline_view(db_engine, tables):
         return inline_view
 
 
-def fetch_primary_key_column_names(db_config):
+def fetch_primary_key_column_names(src_config, tables):
     """
 
     """
-    None
+    db_engine = src_config["db_engine"]
+
+    if db_engine == 'Oracle':
+        primary_keys_query = oracle_queries["get_primary_key"]
+        inline_view = generate_db_specific_inline_view(db_engine, tables)
+        query = primary_keys_query.replace("<temp_placeholder>", inline_view)
+
+        # Execute the query
+        df = oracle_table_to_df(src_config, query, None)
+
+        return df
+
+    print("Primary key fetching not supported for this database engine.")
+    sys.exit(1)
+
+
+def read_data_from_source_db(src_config, schema, table):
+    """
+
+    """
+    db_engine = src_config["db_engine"]
+
+    if db_engine == 'Oracle':
+        query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
+        source_df = oracle_table_to_df(src_config, query, None)
+
+        return source_df
+
+
+def read_data_from_target_db(tgt_config, query):
+    """
+
+    """
+    db_engine = tgt_config["db_engine"]
+
+    if db_engine == 'PostgreSQL':
+        try:
+            target_df = postgres_table_to_df(tgt_config, query, None)
+            return target_df
+        except Exception as err:
+            raise err
