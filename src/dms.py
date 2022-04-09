@@ -853,7 +853,8 @@ def prepare_include_file_for_a_schema(profile, region, schema):
 
     print(f"-> {len(tables)} tables identified in schema [{schema}]")
 
-    no_files = len([name for name in os.listdir("../config")])
+    no_files = len([name for name in os.listdir("../config")
+                    if name.endswith(".csv") and "include" in name.lower()])
     no_files += 1
 
     # Create an Include file

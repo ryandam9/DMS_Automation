@@ -17,6 +17,7 @@ TARGET_DB_ID = "demo"
 
 # Secret manager Value
 # Store the secret in the secret manager as a Key/Value pair.
+SECRET_MANAGER_SECRET_NAME = "test/db"
 SOURCE_DB_SECRET_KEY = "oracle_1"
 TARGET_DB_SECRET_KEY = "postgres_1"
 
@@ -40,10 +41,10 @@ DATA_VALIDATION_REC_COUNT = 1000
 PARALLEL_THREADS = 50
 
 # When true, the data validation comparison will be logged.
-DEBUG_DATA_VALIDATION = False
+DEBUG_DATA_VALIDATION = True
 
 # When set to true, interaction with DB will be logged.
-SQL_ALCHEMY_ECHO_MODE = False
+SQL_ALCHEMY_ECHO_MODE = True
 
 # Enable this when it is failing to connect to the Database.
 # It shows the connecting string including the password.

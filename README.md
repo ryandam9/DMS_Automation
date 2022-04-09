@@ -185,7 +185,20 @@ The tool needs to connect to databases for the following actions.
 - `14. prepare_include_file_for_a_schema`
 
 In general, to connect to a database, following properties are needed:
+   - Host
+   - Port
+   - User
+   - Database
+   - password
 
+The tool fetches these attributes (Except password) from the End points configured in DMS. 
+DB Password can be supplied in two ways:
 
+1. Harding in the config file (By populating `SOURCE_DB_PWD` & `TARGET_DB_PWD`)
+2. By storing them in AWS Secrets Manager. Store them as `Key/Value`. 
+   Configure the following parameters in `config.py`:
 
+   - `SECRET_MANAGER_SECRET_NAME` (Should be same as the one used in AWS Secrets Manager)
+   - `SOURCE_DB_SECRET_KEY`  (Should be same as the one used in AWS Secrets Manager)
+   - `TARGET_DB_SECRET_KEY` (Should be same as the one used in AWS Secrets Manager)
 ****

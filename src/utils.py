@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import sys
 import textwrap
 from datetime import datetime
 from pathlib import Path
@@ -11,7 +12,7 @@ from botocore.exceptions import ClientError
 from openpyxl.styles.borders import Border, Side
 from tabulate import tabulate
 
-from config import csv_files_location
+from config import SECRET_MANAGER_SECRET_NAME, csv_files_location
 
 
 def convert_schemas_to_lowercase():
@@ -177,10 +178,11 @@ def print_messages(messages, headers):
 
 
 def read_secret(profile, region, secret_key):
-    secret_name = "test/db"
+    secret_name = SECRET_MANAGER_SECRET_NAME
 
     # Create a Secrets Manager client
     session = boto3.Session(profile_name=profile, region_name=region)
+
     client = session.client(
         service_name='secretsmanager'
     )
@@ -194,39 +196,57 @@ def read_secret(profile, region, secret_key):
         if e.response['Error']['Code'] == 'DecryptionFailureException':
             # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
             # Deal with the exception here, and/or rethrow at your discretion.
-            raise e
+            print(e)
+            sys.exit(1)
         elif e.response['Error']['Code'] == 'InternalServiceErrorException':
             # An error occurred on the server side.
             # Deal with the exception here, and/or rethrow at your discretion.
-            raise e
+            print(e)
+            sys.exit(1)
         elif e.response['Error']['Code'] == 'InvalidParameterException':
             # You provided an invalid value for a parameter.
             # Deal with the exception here, and/or rethrow at your discretion.
-            raise e
+            print(e)
+            sys.exit(1)
         elif e.response['Error']['Code'] == 'InvalidRequestException':
             # You provided a parameter value that is not valid for the current state of the resource.
             # Deal with the exception here, and/or rethrow at your discretion.
-            raise e
+            print(e)
+            sys.exit(1)
         elif e.response['Error']['Code'] == 'ResourceNotFoundException':
             # We can't find the resource that you asked for.
             # Deal with the exception here, and/or rethrow at your discretion.
-            raise e
+            msg1 = str(e)
+            msg2 = f"Secret not found: {secret_name}"
+            print_messages([[msg1], [msg2]], ['Error'])
+            sys.exit(1)
     else:
         # Decrypts secret using the associated KMS key.
         # Depending on whether the secret is a string or binary, one of these fields will be populated.
         if 'SecretString' in get_secret_value_response:
             secret = get_secret_value_response['SecretString']
+
+            # Convert to a map
+            try:
+                secret = json.loads(secret)
+
+                if secret_key in secret.keys():
+                    return secret[secret_key]
+                else:
+                    msg1 = f"Secret key [{secret_key}] does not exist!! Did you supply the right name in config.py file?"
+                    print_messages([[msg1]], ["Error"])
+                    sys.exit(1)
+            except Exception as error:
+                msg1 = f"Unable to convert secret to JSON: {str(error)}"
+                msg2 = f"Secret: {secret}"
+                msg3 = "The secrets have to be stored in Key/Value format in Secrets manager!"
+                print_messages([[msg1], [msg2], [msg3]], ["Error"])
+                sys.exit(1)
         else:
-            decoded_binary_secret = base64.b64decode(
-                get_secret_value_response['SecretBinary'])
-
-    secret = json.loads(secret)
-
-    # Your code goes here.
-    if secret_key in secret.keys():
-        return secret[secret_key]
-    else:
-        return ""
+            msg1 = "[SecretString] field is not populated in the response."
+            msg2 = get_secret_value_response
+            print_messages([[msg1], [msg2]], ["Error"])
+            sys.exit(1)
 
 
 def get_tables_to_validate():
