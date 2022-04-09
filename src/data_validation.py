@@ -7,8 +7,7 @@ import pandas as pd
 from sql_formatter.core import format_sql
 from sqlalchemy.exc import SQLAlchemyError
 
-from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
-                    PARALLEL_THREADS)
+from config import DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION, PARALLEL_THREADS
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
@@ -46,8 +45,8 @@ def data_validation(src_config, tgt_config):
     6. Get the data from target table using the primary key data.
     7. Compare the data from source & target tables.
     """
-    for file in os.listdir('../logs'):
-        os.remove(os.path.join('../logs', file))
+    for file in os.listdir("../logs"):
+        os.remove(os.path.join("../logs", file))
 
     # Step 1: Get the list of tables that are being migrated
     tables = get_tables_to_validate()
@@ -96,8 +95,7 @@ def data_validation(src_config, tgt_config):
                 args=(
                     schema,
                     table,
-                    primary_keys[table] if table in primary_keys.keys() else [
-                    ],
+                    primary_keys[table] if table in primary_keys.keys() else [],
                     src_config,
                     tgt_config,
                 ),
@@ -160,8 +158,7 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         - Finally, writes the result to a spreadsheet.
     """
     # Generate summary file
-    summary_file = open(
-        f"../logs/{schema}_{table}_data_validation_summary.log", "w")
+    summary_file = open(f"../logs/{schema}_{table}_data_validation_summary.log", "w")
 
     no_pk_cols = len(primary_key)
 
@@ -176,7 +173,7 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
     try:
         source_df = read_data_from_source_db(src_config, schema, table)
     except SQLAlchemyError as e:
-        error = str(e.__dict__['orig'])
+        error = str(e.__dict__["orig"])
         msg = f"{schema}~{table}~0~0~~{error}"
         write_log_entry(summary_file, msg, True)
         return
@@ -237,7 +234,7 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
     try:
         target_df = read_data_from_target_db(tgt_config, query)
     except SQLAlchemyError as e:
-        error = str(e.__dict__['orig'])
+        error = str(e.__dict__["orig"])
         msg = f"{schema}~{table}~0~0~~{error}"
         write_log_entry(summary_file, msg, True)
         return
@@ -262,7 +259,11 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         [target_table_pk.append("tgt_" + col.lower()) for col in primary_key]
 
         combined_df = pd.merge(
-            source_df, target_df, how="left", left_on=primary_key, right_on=target_table_pk
+            source_df,
+            target_df,
+            how="left",
+            left_on=primary_key,
+            right_on=target_table_pk,
         )
 
         combined_df = combined_df.replace({np.nan: None})
@@ -270,7 +271,8 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         # Now that, we have Source & Target DB data in a single Dataframe
         # Compare the records and check if they're same or not.
         formatted_df = compare_data(
-            combined_df, schema, table, columns, primary_key, summary_file)
+            combined_df, schema, table, columns, primary_key, summary_file
+        )
 
         excel_file_location = f"../data_validation/{schema}_{table}.xlsx"
 
@@ -410,12 +412,10 @@ def generate_db_specific_inline_view(db_engine, tables):
 
 
 def fetch_primary_key_column_names(src_config, tables):
-    """
-
-    """
+    """ """
     db_engine = src_config["db_engine"]
 
-    if db_engine == 'Oracle':
+    if db_engine == "Oracle":
         primary_keys_query = oracle_queries["get_primary_key"]
         inline_view = generate_db_specific_inline_view(db_engine, tables)
         query = primary_keys_query.replace("<temp_placeholder>", inline_view)
@@ -430,12 +430,10 @@ def fetch_primary_key_column_names(src_config, tables):
 
 
 def read_data_from_source_db(src_config, schema, table):
-    """
-
-    """
+    """ """
     db_engine = src_config["db_engine"]
 
-    if db_engine == 'Oracle':
+    if db_engine == "Oracle":
         try:
             query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
             source_df = oracle_table_to_df(src_config, query, None)
@@ -446,12 +444,10 @@ def read_data_from_source_db(src_config, schema, table):
 
 
 def read_data_from_target_db(tgt_config, query):
-    """
-
-    """
+    """ """
     db_engine = tgt_config["db_engine"]
 
-    if db_engine == 'PostgreSQL':
+    if db_engine == "PostgreSQL":
         try:
             target_df = postgres_table_to_df(tgt_config, query, None)
             return target_df
@@ -460,9 +456,7 @@ def read_data_from_target_db(tgt_config, query):
 
 
 def write_log_entry(file, entry, close_file):
-    """
-
-    """
+    """ """
     file.write(entry + "\n")
 
     if close_file:

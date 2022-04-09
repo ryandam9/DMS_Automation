@@ -36,7 +36,7 @@ def oracle_get_table_metadata(tables, db_config):
         df = oracle_table_to_df(db_config, query, None)
         return df
     except SQLAlchemyError as e:
-        error = str(e.__dict__['orig'])
+        error = str(e.__dict__["orig"])
         print_messages([[error]], ["Error connecting to Source DB"])
         sys.exit(1)
 
@@ -63,7 +63,7 @@ def postgres_get_table_metadata(tables, db_config):
         df = postgres_table_to_df(db_config, query, None)
         return df
     except SQLAlchemyError as e:
-        error = str(e.__dict__['orig'])
+        error = str(e.__dict__["orig"])
         print_messages([[error]], ["Error connecting to Target DB"])
         sys.exit(1)
 
@@ -140,11 +140,9 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
         + ".xlsx"
     )
 
-    combined_df.to_excel(
-        csv_file, sheet_name="Structure comparison", index=False)
+    combined_df.to_excel(csv_file, sheet_name="Structure comparison", index=False)
 
     print(f"-> CSV report generated: {os.path.abspath(csv_file)}")
 
     # Generate a HTML report
-    generate_table_metadata_compare_report(
-        combined_df, src_db_config, tgt_db_config)
+    generate_table_metadata_compare_report(combined_df, src_db_config, tgt_db_config)
