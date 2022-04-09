@@ -7,8 +7,7 @@ import pandas as pd
 from sql_formatter.core import format_sql
 from sqlalchemy.exc import SQLAlchemyError
 
-from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
-                    PARALLEL_THREADS)
+from config import DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION, PARALLEL_THREADS
 from constants import ORACLE, POSTGRES
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
@@ -97,8 +96,7 @@ def data_validation(src_config, tgt_config):
                 args=(
                     schema,
                     table,
-                    primary_keys[table] if table in primary_keys.keys() else [
-                    ],
+                    primary_keys[table] if table in primary_keys.keys() else [],
                     src_config,
                     tgt_config,
                 ),
@@ -161,8 +159,7 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         - Finally, writes the result to a spreadsheet.
     """
     # Generate summary file
-    summary_file = open(
-        f"../logs/{schema}_{table}_data_validation_summary.log", "w")
+    summary_file = open(f"../logs/{schema}_{table}_data_validation_summary.log", "w")
 
     no_pk_cols = len(primary_key)
 

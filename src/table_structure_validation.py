@@ -80,7 +80,8 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
         src_df = postgres_get_table_metadata(tables, tgt_db_config)
     else:
         print_messages(
-            [[f"Unsupported DB Engine: {src_db_config['db_engine']}"]], ["Error"])
+            [[f"Unsupported DB Engine: {src_db_config['db_engine']}"]], ["Error"]
+        )
         sys.exit(1)
 
     print("-> Metadata gathered from Source DB")
@@ -92,7 +93,8 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
         tgt_df = postgres_get_table_metadata(tables, tgt_db_config)
     else:
         print_messages(
-            [[f"Unsupported DB Engine: {tgt_db_config['db_engine']}"]], ["Error"])
+            [[f"Unsupported DB Engine: {tgt_db_config['db_engine']}"]], ["Error"]
+        )
         sys.exit(1)
 
     # Change Dataframe column names, so that, we don't have to depend on
@@ -152,11 +154,9 @@ def validate_table_structure(tables, src_db_config, tgt_db_config):
         + ".xlsx"
     )
 
-    combined_df.to_excel(
-        csv_file, sheet_name="Structure comparison", index=False)
+    combined_df.to_excel(csv_file, sheet_name="Structure comparison", index=False)
 
     print(f"-> CSV report generated: {os.path.abspath(csv_file)}")
 
     # Generate a HTML report
-    generate_table_metadata_compare_report(
-        combined_df, src_db_config, tgt_db_config)
+    generate_table_metadata_compare_report(combined_df, src_db_config, tgt_db_config)

@@ -35,11 +35,20 @@ def oracle_get_connection(config):
 
 
 def oracle_table_to_df(config, query, params):
+    """"
+    Executes given SQL query and returns a Pandas DataFrame.
+
+    :param config: Dictionary containing DB connection details.
+    :param query: SQL query to be executed.
+    :param params: List of parameters to be passed to the query.
+    """
     host = config["host"]
     port = config["port"]
     service = config["service"]
     user = config["user"]
     password = config["password"]
+
+    client_entry = ''
 
     if 'windows' in platform.system().lower():
         client_entry = os.environ['PATH'].split(";")[0]
