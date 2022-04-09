@@ -4,6 +4,7 @@ import warnings
 import cx_Oracle
 import pandas as pd
 import sqlalchemy
+from click import echo
 from sqlalchemy import exc as sa_exc
 from sqlalchemy.exc import SQLAlchemyError
 from tabulate import tabulate
@@ -45,6 +46,7 @@ def oracle_table_to_df(config, query, params):
             engine = sqlalchemy.create_engine(
                 f"oracle+cx_oracle://{user}:{password}@{host}:{port}/?service_name={service}",
                 arraysize=1000,
+                echo=True
             )
 
             if params is None:
@@ -92,10 +94,12 @@ def oracle_execute_query(config, query, parameters):
             for i in range(len(record)):
                 string_value = ""
                 try:
-                    string_value = str(record[i]) if record[i] is not None else ""
+                    string_value = str(
+                        record[i]) if record[i] is not None else ""
                 except Exception as error:
                     print(
-                        "Unable to convert value to String; value: {}".format(record[i])
+                        "Unable to convert value to String; value: {}".format(
+                            record[i])
                     )
 
                 rec.append(string_value)
@@ -115,11 +119,13 @@ def oracle_execute_query(config, query, parameters):
 
 def oracle_table_metadata(config, schema, table, print_result=False):
     query = oracle_queries["get_table_ddl"]
-    query_result = oracle_execute_query(config, query, parameters=[schema, table])
+    query_result = oracle_execute_query(
+        config, query, parameters=[schema, table])
 
     if print_result:
         print(
-            tabulate(query_result[1:], headers=query_result[0], tablefmt="fancy_grid")
+            tabulate(query_result[1:],
+                     headers=query_result[0], tablefmt="fancy_grid")
         )
 
     return query_result

@@ -11,6 +11,8 @@ from botocore.exceptions import ClientError
 from openpyxl.styles.borders import Border, Side
 from tabulate import tabulate
 
+from config import csv_files_location
+
 
 def convert_schemas_to_lowercase():
     return {
@@ -215,13 +217,42 @@ def read_secret(profile, region, secret_key):
         if 'SecretString' in get_secret_value_response:
             secret = get_secret_value_response['SecretString']
         else:
-            decoded_binary_secret = base64.b64decode(get_secret_value_response['SecretBinary'])
-            
+            decoded_binary_secret = base64.b64decode(
+                get_secret_value_response['SecretBinary'])
+
     secret = json.loads(secret)
-    
-    # Your code goes here. 
+
+    # Your code goes here.
     if secret_key in secret.keys():
         return secret[secret_key]
     else:
         return ""
-    
+
+
+def get_tables_to_validate():
+    """
+    This function reads the "INCLUDE" files in config folder and returns a list of tables to validate.
+
+    :return: A list of tables to validate. Each table is a map with keys:
+        'schema' and 'table'
+    """
+    tables = []
+
+    # Read the Input CSV Files & gather a list of Schemas and tables
+    # that are being migrated.
+    for file in os.listdir(csv_files_location):
+        file_full_path = os.path.join(csv_files_location, file)
+
+        if file.startswith("include"):
+            print(f"-> Reading {file}")
+
+            with open(file_full_path, "r") as f:
+                for line in f:
+                    schema, table = line.split(",")[0], line.split(",")[1]
+                    schema = schema.strip().upper()
+                    table = table.strip().upper()
+
+                    tables.append({"schema": schema, "table": table})
+
+    tables.sort(key=lambda x: x["schema"] + x["table"])
+    return tables

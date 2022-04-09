@@ -6,43 +6,33 @@ import pandas as pd
 from sql_formatter.core import format_sql
 
 from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
-                    PARALLEL_THREADS, csv_files_location,
-                    show_generated_queries)
+                    PARALLEL_THREADS, show_generated_queries)
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
 from generate_html_reports import generate_data_validation_report
-from utils import print_messages
-
-
-def get_tables_to_validate():
-    tables_migrated = []
-
-    # Read the Input CSV Files & gather a list of Schemas and tables
-    # that are being migrated.
-    for file in os.listdir(csv_files_location):
-        file_full_path = os.path.join(csv_files_location, file)
-
-        if file.startswith("include"):
-            print(f"-> Reading {file}")
-
-            with open(file_full_path, "r") as f:
-                for line in f:
-                    schema, table = line.split(",")[0], line.split(",")[1]
-
-                    schema = schema.strip().upper()
-                    table = table.strip().upper()
-
-                    tables_migrated.append({"schema": schema, "table": table})
-
-    tables_migrated.sort(key=lambda x: x["schema"] + x["table"])
-    return tables_migrated
+from utils import get_tables_to_validate, print_messages
 
 
 def data_validation(src_config, tgt_config):
     """
+    This is the Driver function that controls all data validation activity.
+
     For the tables that're migrated, this function compares the data
     between source & target tables.
+
+    src_config: Source DB config. A Dictionary that has all details needed to
+                connect to the source database. It has the following keys:
+
+                - db_engine
+                - host
+                - port
+                - service
+                - user
+                - password
+
+    tgt_config: Target DB config. A Dictionary that has all details needed to
+                connect to the target database.
 
     Steps:
     ------
@@ -54,16 +44,17 @@ def data_validation(src_config, tgt_config):
     6. Get the data from target table using the primary key data.
     7. Compare the data from source & target tables.
     """
-    # Step 1: Get the list of tables that are being migrated
-    tables_migrated = get_tables_to_validate()
-    print(f"-> Tables have been identified. Count: {len(tables_migrated)}")
 
-    # Step 2: Use DB Metadata, identify primary key columns for each
+    # Step 1: Get the list of tables that are being migrated
+    tables = get_tables_to_validate()
+    print(f"-> Tables have been identified. Count: {len(tables)}")
+
+    # Step 2: Using DB catalog tables, identify primary key columns for each
     # table from source DB.
     primary_keys_query = oracle_queries["get_primary_key"]
     inline_view = ""
 
-    for index, table in enumerate(tables_migrated):
+    for index, table in enumerate(tables):
         if index > 0:
             inline_view += " UNION "
 
@@ -86,10 +77,8 @@ def data_validation(src_config, tgt_config):
         primary_keys[table].append(pk)
 
     print(f"-> Primary keys have been identified.")
-    for t in primary_keys.keys():
-        print(f"-> {t:>30} - {primary_keys[t]}")
 
-    no_tables = len(tables_migrated)
+    no_tables = len(tables)
 
     # Perform data validation in parallel rather sequentially to get better performance.
     i = 0
@@ -103,15 +92,16 @@ def data_validation(src_config, tgt_config):
 
         for j in range(no_threads_per_cycle):
             table_id = i + j
-            schema = tables_migrated[table_id]["schema"]
-            table = tables_migrated[table_id]["table"]
+            schema = tables[table_id]["schema"]
+            table = tables[table_id]["table"]
 
             t = threading.Thread(
                 target=data_validation_single_table,
                 args=(
                     schema,
                     table,
-                    primary_keys[table] if table in primary_keys.keys() else [],
+                    primary_keys[table] if table in primary_keys.keys() else [
+                    ],
                     src_config,
                     tgt_config,
                 ),
@@ -174,7 +164,8 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
     # At this point, we are not validating tables that don't have
     # primary keys.
     if no_pk_cols == 0:
-        print(f"-> {schema}.{table} does not have primary keys, skipping data validation!")
+        print(
+            f"-> {schema}.{table} does not have primary keys, skipping data validation!")
         return
 
     query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
@@ -188,7 +179,7 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
 
     # Step 4: Capture the primary key data.
     pk_values = source_df[primary_key].values.tolist()
-    
+
     # Step 5: Prepare a query to fetch the data from target DB.
     query = "WITH temp AS ("
     for index, sample_pk_value in enumerate(pk_values):
@@ -229,10 +220,10 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         print("\n")
 
     # Step 6: Get the data from target table using the primary key data.
-    target_df, status = postgres_table_to_df(tgt_config, query, None)
-
-    if status == 'failure':
-        print(f"{schema}.{table} Table does not exist")
+    try:
+        target_df = postgres_table_to_df(tgt_config, query, None)
+    except Exception as err:
+        print(f"-> Error while fetching data from target DB: {err}")
         return
 
     if len(target_df) == 0:
@@ -260,7 +251,8 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
 
     # Now that, we have Source & Target DB data in a single Dataframe
     # Compare the records and check if they're same or not.
-    formatted_df = compare_data(combined_df, schema, table, columns, primary_key)
+    formatted_df = compare_data(
+        combined_df, schema, table, columns, primary_key)
 
     excel_file_location = f"../data_validation/{schema}_{table}.xlsx"
 
@@ -359,7 +351,8 @@ def compare_data(df, schema, table, columns, primary_key):
         log_file.close()
 
     # Generate summary file
-    summary_file = open(f"../logs/{schema}_{table}_data_validation_summary.log", "w")
+    summary_file = open(
+        f"../logs/{schema}_{table}_data_validation_summary.log", "w")
 
     # Table, no. of records validated, no. of records having differences, Columns having differences
     line1 = f"{schema}:{table}:{len(df)}:{no_recs_having_differences}:{','.join(list(columns_having_differences))}"
@@ -389,3 +382,10 @@ def generate_db_specific_inline_view(db_engine, tables):
             inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name "
 
         return inline_view
+
+
+def fetch_primary_key_column_names(db_config):
+    """
+
+    """
+    None

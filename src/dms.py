@@ -4,7 +4,6 @@ import re
 import sys
 import textwrap
 from datetime import datetime
-from nis import cat
 
 import boto3
 import pandas as pd
@@ -61,7 +60,8 @@ def create_dms_tasks(profile, region):
 
         # Replace special chars, otherwise AWS will complain.
         task_id = (
-            task_id.replace(".json", "").replace("_", "-").replace(".", "-").strip()
+            task_id.replace(".json", "").replace(
+                "_", "-").replace(".", "-").strip()
             + "-"
             + current_time
         )
@@ -257,7 +257,8 @@ def delete_dms_tasks(profile, region):
     if count > 0:
         print(f"{count} errors encountered while deleting DMS tasks.")
     else:
-        wait_for_status_change(dms, "replication_task_deleted", arns_to_be_deleted)
+        wait_for_status_change(
+            dms, "replication_task_deleted", arns_to_be_deleted)
         print(f"{len(arns_to_be_deleted)} tasks have been deleted!")
 
 
@@ -378,7 +379,8 @@ def describe_table_statistics(profile, region):
                         table_statistics["FullLoadStartTime"].strftime(
                             "%Y-%m-%d %H:%M"
                         ),
-                        table_statistics["FullLoadEndTime"].strftime("%Y-%m-%d %H:%M"),
+                        table_statistics["FullLoadEndTime"].strftime(
+                            "%Y-%m-%d %H:%M"),
                     ]
                 )
 
@@ -631,7 +633,7 @@ def describe_db_log_files(profile, region):
                 )
 
                 for log_file in response["DescribeDBLogFiles"][
-                    : -1 - 1 * DB_LOG_FILE_COUNT : -1
+                    : -1 - 1 * DB_LOG_FILE_COUNT: -1
                 ]:
                     resp = rds.download_db_log_file_portion(
                         DBInstanceIdentifier=db_id,
@@ -857,5 +859,6 @@ def delete_all_dms_tasks(profile, region):
     if count > 0:
         print(f"{count} errors encountered while deleting DMS tasks.")
     else:
-        wait_for_status_change(dms, "replication_task_deleted", arns_to_be_deleted)
+        wait_for_status_change(
+            dms, "replication_task_deleted", arns_to_be_deleted)
         print(f"{len(arns_to_be_deleted)} tasks have been deleted!")

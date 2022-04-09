@@ -45,8 +45,8 @@ def postgres_table_to_df(config, query, params):
 
     try:
         with warnings.catch_warnings():
-         warnings.simplefilter("ignore", category=sa_exc.SAWarning)
-         
+            warnings.simplefilter("ignore", category=sa_exc.SAWarning)
+
         engine = sqlalchemy.create_engine(
             f"postgresql+psycopg2://{user}:{password}@{host}/{service}"
         )
@@ -56,13 +56,12 @@ def postgres_table_to_df(config, query, params):
             return df
         else:
             df = pd.read_sql(query, engine, params=params)
-            return (df, 'success')
+            return df
 
     except SQLAlchemyError as e:
         error = str(e.__dict__['orig'])
         print(error)
-
-        return (None, 'failure')
+        raise e
 
 
 def postgres_execute_query(config, query, parameters):
@@ -99,10 +98,12 @@ def postgres_execute_query(config, query, parameters):
             for i in range(len(record)):
                 string_value = ""
                 try:
-                    string_value = str(record[i]) if record[i] is not None else ""
+                    string_value = str(
+                        record[i]) if record[i] is not None else ""
                 except Exception as error:
                     print(
-                        "Unable to convert value to String; value: {}".format(record[i])
+                        "Unable to convert value to String; value: {}".format(
+                            record[i])
                     )
 
                 rec.append(string_value)
@@ -122,11 +123,13 @@ def postgres_execute_query(config, query, parameters):
 
 def postgres_table_metadata(config, schema, table, print_result=False):
     query = postgres_queries["get_table_ddl"]
-    query_result = postgres_execute_query(config, query, parameters=[schema, table])
+    query_result = postgres_execute_query(
+        config, query, parameters=[schema, table])
 
     if print_result:
         print(
-            tabulate(query_result[1:], headers=query_result[0], tablefmt="fancy_grid")
+            tabulate(query_result[1:],
+                     headers=query_result[0], tablefmt="fancy_grid")
         )
 
     return query_result
