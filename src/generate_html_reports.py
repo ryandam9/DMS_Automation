@@ -98,7 +98,12 @@ def generate_data_validation_report(data):
             html_row += f"<td></td>"
 
         # Append message.
-        html_row += f"<td>{msg}</td>"
+        if "no data differences found" in msg.lower():
+            html_row += f"<td class='bg-success text-light'>{msg}</td>"
+        elif "no data found" in msg.lower():
+            html_row += f"<td class='bg-info'>{msg}</td>"
+        else:
+            html_row += f"<td class='bg-warning'>{msg}</td>"
 
         html_row += "</tr>"
         html_table_data += html_row

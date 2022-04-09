@@ -44,7 +44,7 @@ PARALLEL_THREADS = 50
 DEBUG_DATA_VALIDATION = True
 
 # When set to true, interaction with DB will be logged.
-SQL_ALCHEMY_ECHO_MODE = True
+SQL_ALCHEMY_ECHO_MODE = False
 
 # Enable this when it is failing to connect to the Database.
 # It shows the connecting string including the password.

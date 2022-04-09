@@ -80,7 +80,6 @@ def oracle_table_to_df(config, query, params):
             msg2 = f"USER: {user}, PASSWORD: {password}, HOST: {host}, PORT: {port}, SERVICE: {service}"
             msg3 = f"Client path: {client_entry}"
             print_messages([[msg1], [msg2], [msg3]], ["Error"])
-            sys.exit(1)
 
         raise e
 

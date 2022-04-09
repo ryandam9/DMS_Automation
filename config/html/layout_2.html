@@ -10,6 +10,16 @@
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <title>Data validation</title>
+
+    <style>
+        .alert {
+            margin-bottom: 2px;
+            padding: 5px 10px;
+            height: 25px;
+            line-height: 35px;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -17,18 +27,32 @@
         <div class="container-fluid py-4">
             <div class="p-5 mb-4 bg-light rounded-3">
                 <div class="container-fluid py-5">
-                    <h1 class="display-5 fw-bold">Data validation</h1>
-                    <p class="col-md-8 fs-4">This page presents data differences between Source & Target DBs.
+                    <h1 class="display-5 fw-bold text-primary">Data Validation</h1>
+                    <p class="col-md-8 fs-4 text-muted">This page presents data differences between Source & Target DBs.
+                    </p>
+
+                    <ul>
+                        <li class="text-muted">To review column level differences, set <span
+                                class="alert alert-info">DEBUG_DATA_VALIDATION</span> to <span
+                                class="alert alert-danger">True</span> and then view the log files @
+                            <span class="alert alert-info">logs</span> folder.
+                        </li>
+                        <li class="text-muted">
+                            The records validated in source and target DBs are available at <span
+                                class="alert alert-info">data_validation</span> folder.
+                        </li>
+                    </ul>
+
                 </div>
             </div>
         </div>
 
         <div class="container-fluid py-4">
-            <div class="p-5 mb-4 bg-light rounded-5">
+            <div class="p-5 mb-4 rounded-5 bg-light">
                 <div class="row">
                     <div class="col-1"></div>
                     <div class="col-10">
-                        <table id="example" class="table table-striped" style="width:100%">
+                        <table id="example" class="table" style="width:100%">
                             <thead>
                                 <tr>
                                     <th>SCHEMA</th>

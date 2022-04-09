@@ -7,7 +7,8 @@ import pandas as pd
 from sql_formatter.core import format_sql
 from sqlalchemy.exc import SQLAlchemyError
 
-from config import DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION, PARALLEL_THREADS
+from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
+                    PARALLEL_THREADS)
 from constants import ORACLE, POSTGRES
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
@@ -46,12 +47,19 @@ def data_validation(src_config, tgt_config):
     6. Get the data from target table using the primary key data.
     7. Compare the data from source & target tables.
     """
+    # Delete log files
     for file in os.listdir("../logs"):
         os.remove(os.path.join("../logs", file))
 
     # Step 1: Get the list of tables that are being migrated
     tables = get_tables_to_validate()
     print(f"-> Tables have been identified. Count: {len(tables)}")
+
+    if len(tables) == 0:
+        msg1 = "No tables have been identified for data validation."
+        msg2 = "Populate the 'include' csv files in config folder"
+        print_messages([[msg1], [msg2]], ['Error'])
+        sys.exit(1)
 
     # Step 2: Using DB catalog tables, identify primary key columns for each
     # table from source DB.
@@ -96,7 +104,8 @@ def data_validation(src_config, tgt_config):
                 args=(
                     schema,
                     table,
-                    primary_keys[table] if table in primary_keys.keys() else [],
+                    primary_keys[table] if table in primary_keys.keys() else [
+                    ],
                     src_config,
                     tgt_config,
                 ),
@@ -159,7 +168,8 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         - Finally, writes the result to a spreadsheet.
     """
     # Generate summary file
-    summary_file = open(f"../logs/{schema}_{table}_data_validation_summary.log", "w")
+    summary_file = open(
+        f"../logs/{schema}_{table}_data_validation_summary.log", "w")
 
     no_pk_cols = len(primary_key)
 
@@ -383,7 +393,7 @@ def compare_data(df, schema, table, columns, primary_key, summary_file):
         log_file.close()
 
     # Table, no. of records validated, no. of records having differences, Columns having differences
-    line1 = f"{schema}~{table}~{len(df)}~{no_recs_having_differences}~{','.join(list(columns_having_differences))}~VALIDATION COMPLETED"
+    line1 = f"{schema}~{table}~{len(df)}~{no_recs_having_differences}~{','.join(list(columns_having_differences))}~NO DATA DIFFERENCES FOUND"
     write_log_entry(summary_file, line1, True)
 
     return formatted_df
@@ -422,9 +432,14 @@ def fetch_primary_key_column_names(src_config, tables):
         query = primary_keys_query.replace("<temp_placeholder>", inline_view)
 
         # Execute the query
-        df = oracle_table_to_df(src_config, query, None)
-
-        return df
+        try:
+            df = oracle_table_to_df(src_config, query, None)
+            return df
+        except SQLAlchemyError as e:
+            error = str(e.__dict__["orig"])
+            print("Unable to fetch primary key column names: " + error)
+            print(query)
+            sys.exit(1)
 
     print("Primary key fetching not supported for this database engine.")
     sys.exit(1)
