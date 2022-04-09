@@ -15,6 +15,7 @@ from config import (DB_LOG_FILE_COUNT, MAX_TASKS_PER_PAGE, SOURCE_DB_ID,
                     json_files_location, replication_instance_arn,
                     sns_topic_arn, source_endpoint_arn, target_endpoint_arn,
                     task_arn_file)
+from constants import ORACLE, POSTGRES
 from data_validation import data_validation
 from databases.oracle import (oracle_table_metadata, oracle_table_to_df,
                               oracle_tables)
@@ -675,7 +676,6 @@ def describe_db_log_files(profile, region):
 
 def get_source_db_connection(profile, region):
     endpoints = describe_endpoints(profile, region)
-
     id = 0
 
     if endpoints[0][1].upper() == "SOURCE":
@@ -725,11 +725,10 @@ def get_source_db_connection(profile, region):
 
 def get_target_db_connection(profile, region):
     endpoints = describe_endpoints(profile, region, print_result=False)
-
     id = 1
 
     if endpoints[0][1].upper() == "TARGET":
-        id = 1
+        id = 0
     else:
         if endpoints[1][1].upper() == "TARGET":
             id = 1
@@ -821,11 +820,11 @@ def validate_table_structure_single_table(
     target_metadata = []
 
     # Get Metadata from Source DB
-    if source_config["db_engine"] == "Oracle":
+    if source_config["db_engine"] in ORACLE:
         source_metadata = oracle_table_metadata(source_config, schema, table)
 
     # Get Metadata from Target DB
-    if "PostgreSQL" in target_config["db_engine"]:
+    if target_config["db_engine"] in POSTGRES:
         target_metadata = postgres_table_metadata(target_config, schema, table)
 
     if write_to_excel:

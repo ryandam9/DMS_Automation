@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from config import (DATA_VALIDATION_REC_COUNT, DEBUG_DATA_VALIDATION,
                     PARALLEL_THREADS)
+from constants import ORACLE, POSTGRES
 from databases.oracle import oracle_execute_query, oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
@@ -96,7 +97,8 @@ def data_validation(src_config, tgt_config):
                 args=(
                     schema,
                     table,
-                    primary_keys[table] if table in primary_keys.keys() else [],
+                    primary_keys[table] if table in primary_keys.keys() else [
+                    ],
                     src_config,
                     tgt_config,
                 ),
@@ -159,7 +161,8 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         - Finally, writes the result to a spreadsheet.
     """
     # Generate summary file
-    summary_file = open(f"../logs/{schema}_{table}_data_validation_summary.log", "w")
+    summary_file = open(
+        f"../logs/{schema}_{table}_data_validation_summary.log", "w")
 
     no_pk_cols = len(primary_key)
 
@@ -404,9 +407,9 @@ def generate_db_specific_inline_view(db_engine, tables):
         if index > 0:
             inline_view += " UNION "
 
-        if db_engine == "Oracle":
+        if db_engine in ORACLE:
             inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name FROM DUAL "
-        elif "PostgreSQL" in db_engine:
+        elif db_engine in POSTGRES:
             inline_view += f"SELECT '{table['schema']}' AS owner, '{table['table']}' AS table_name "
 
     return inline_view
@@ -416,7 +419,7 @@ def fetch_primary_key_column_names(src_config, tables):
     """ """
     db_engine = src_config["db_engine"]
 
-    if db_engine == "Oracle":
+    if db_engine in ORACLE:
         primary_keys_query = oracle_queries["get_primary_key"]
         inline_view = generate_db_specific_inline_view(db_engine, tables)
         query = primary_keys_query.replace("<temp_placeholder>", inline_view)
@@ -434,7 +437,7 @@ def read_data_from_source_db(src_config, schema, table):
     """ """
     db_engine = src_config["db_engine"]
 
-    if db_engine == "Oracle":
+    if db_engine in ORACLE:
         try:
             query = f"SELECT * FROM {schema}.{table} WHERE ROWNUM < {DATA_VALIDATION_REC_COUNT}"
             source_df = oracle_table_to_df(src_config, query, None)
@@ -448,7 +451,7 @@ def read_data_from_target_db(tgt_config, query):
     """ """
     db_engine = tgt_config["db_engine"]
 
-    if "PostgreSQL" in db_engine:
+    if db_engine in POSTGRES:
         try:
             target_df = postgres_table_to_df(tgt_config, query, None)
             return target_df

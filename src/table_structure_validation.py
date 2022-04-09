@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy.exc import SQLAlchemyError
 
+from constants import ORACLE, POSTGRES
 from databases.oracle import oracle_table_to_df
 from databases.oracle_queries import oracle_queries
 from databases.postgres import postgres_table_to_df
@@ -70,18 +71,29 @@ def postgres_get_table_metadata(tables, db_config):
 
 def validate_table_structure(tables, src_db_config, tgt_db_config):
     """ """
-    if src_db_config["db_engine"] == "Oracle":
+    src_df = pd.DataFrame()
+    tgt_df = pd.DataFrame()
+
+    if src_db_config["db_engine"] in ORACLE:
         src_df = oracle_get_table_metadata(tables, src_db_config)
-    elif "PostgreSQL" in src_db_config["db_engine"]:
+    elif src_db_config["db_engine"] in POSTGRES:
         src_df = postgres_get_table_metadata(tables, tgt_db_config)
+    else:
+        print_messages(
+            [[f"Unsupported DB Engine: {src_db_config['db_engine']}"]], ["Error"])
+        sys.exit(1)
 
     print("-> Metadata gathered from Source DB")
     print(f"-> Size: {len(src_df)}")
 
-    if tgt_db_config["db_engine"] == "Oracle":
+    if tgt_db_config["db_engine"] in ORACLE:
         tgt_df = oracle_get_table_metadata(tables, src_db_config)
-    elif "PostgreSQL" in tgt_db_config["db_engine"]:
+    elif tgt_db_config["db_engine"] in POSTGRES:
         tgt_df = postgres_get_table_metadata(tables, tgt_db_config)
+    else:
+        print_messages(
+            [[f"Unsupported DB Engine: {tgt_db_config['db_engine']}"]], ["Error"])
+        sys.exit(1)
 
     # Change Dataframe column names, so that, we don't have to depend on
     # database specific names.
