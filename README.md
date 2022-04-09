@@ -50,7 +50,10 @@ usage: app.py [-h] [--profile PROFILE] [--region REGION]
                   describe_endpoints,
                   describe_db_log_files,
                   validate_table_structures,
-                  validate_data
+                  validate_data,
+                  prepare_include_file_for_a_schema,
+                  
+
                   }
               ]
               [--task_arn TASK_ARN] [--table_name TABLE_NAME]
@@ -59,24 +62,25 @@ usage: app.py [-h] [--profile PROFILE] [--region REGION]
 ### Actions
 Following are different types of actions the script supports.
 
-Action | Description|
---- | --- | 
-`generate_json_files`|Generate DMS JSON Files
-`create_dms_tasks`|Create JSON Files, and then creates DMS tasks
-`list_dms_tasks`|List DMS Tasks
-`delete_dms_tasks`|Delete DMS tasks
-`run_dms_tasks`|Run DMS tasks
-`test_db_connection_from_replication_instance`|Test DB Connections
-`describe_table_statistics`|Describe Table stats
-`create_iam_role_for_dms_cloudwatch_logs`|Creates IAM role needed by DMS to log
-`fetch_cloudwatch_logs_for_a_task`|Fetch Cloudwatch logs for the task
-`describe_endpoints`|Describe DMS Endpoints
-`describe_db_log_files`|Fetch DB Log files
-`validate_table_structures`|Compares table structures of the Source & Target DB
-`validate_data`|Compares data in the Source & Target DB|
+Action ID|Action | Description|
+--- |--- | --- | 
+`1`|`generate_json_files`|Generate DMS JSON Files
+`2`|`create_dms_tasks`|Create JSON Files, and then creates DMS tasks
+`3`|`list_dms_tasks`|List DMS Tasks
+`4`|`delete_dms_tasks`|Delete DMS tasks
+`5`|`run_dms_tasks`|Run DMS tasks
+`6`|`test_db_connection_from_replication_instance`|Test DB Connections
+`7`|`describe_table_statistics`|Describe Table stats
+`8`|`create_iam_role_for_dms_cloudwatch_logs`|Creates IAM role needed by DMS to log
+`9`|`fetch_cloudwatch_logs_for_a_task`|Fetch Cloudwatch logs for the task
+`10`|`describe_endpoints`|Describe DMS Endpoints
+`11`|`describe_db_log_files`|Fetch DB Log files
+`12`|`validate_table_structures`|Compares table structures of the Source & Target DB
+`13`|`validate_data`|Compares data in the Source & Target DB|
+`14`|`prepare_include_file_for_a_schema`|Creates a file with all the tables in a schema (Currently suppports Oracle)
+`15`|`delete_all_dms_tasks`|Delete all DMS tasks.
 ****
 #### For Quick run
-
 ```sh
 python app.py --action generate_json_files
 python app.py --action create_dms_tasks
@@ -91,8 +95,29 @@ python app.py --action describe_endpoints
 python app.py --action describe_db_log_files
 python app.py --action validate_table_structures --table_name <schema.table>
 python app.py --action validate_table_structures --table_name all
-python app.py --action validate_data
+python app.py --action prepare_include_file_for_a_schema
+python app.py --action delete_all_dms_tasks
 ```
+Rather than passing text based actions, the tool supports numefic IDs dedicated to each action.
+
+```sh
+python app.py --action 1
+python app.py --action 2
+python app.py --action 3
+python app.py --action 4
+python app.py --action 5
+python app.py --action 6
+python app.py --action 7
+python app.py --action 8
+python app.py --action 9
+python app.py --action 10
+python app.py --action 11
+python app.py --action 12
+python app.py --action 13
+python app.py --action 14
+python app.py --action 15
+```
+
 ## To perform Data validation for Oracle Databases
 
 ### For Windows
@@ -142,4 +167,9 @@ python app.py --action validate_data
 cd DMS_Automation/config
 pip install -r requirements.txt
 ```
+****
+## Settings in `src/config.py` file
+
+- `oracle_instance_client_path`
+   - Update this to point to Oracle client path.
 ****
