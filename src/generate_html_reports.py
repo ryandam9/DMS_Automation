@@ -3,7 +3,13 @@ from datetime import datetime
 
 
 def generate_table_metadata_compare_report(df, src_db_config, tgt_db_config):
-    """ """
+    """ 
+    Generates a HTML Report for Table Metadata comparison.
+
+    :param df: Dataframe containing the table metadata comparison.
+    :param src_db_config: Source database configuration.
+    :param tgt_db_config: Target database configuration.
+    """
     html_table_data = ""
 
     for row in df.values.tolist():
@@ -26,18 +32,18 @@ def generate_table_metadata_compare_report(df, src_db_config, tgt_db_config):
         "generate_table_metadata_compare_report", html_table_data
     )
 
-    html_template = (html_template
-                     .replace("[src_db_engine]", src_db_config['db_engine'])
-                     .replace("[src_host]", src_db_config['host'])
-                     .replace("[src_port]", str(src_db_config['port']))
-                     .replace("[src_database]", src_db_config['service'])
-                     .replace("[src_user]", src_db_config['user'])
-                     .replace("[tgt_db_engine]", tgt_db_config['db_engine'])
-                     .replace("[tgt_host]", tgt_db_config['host'])
-                     .replace("[tgt_port]", str(tgt_db_config['port']))
-                     .replace("[tgt_database]", tgt_db_config['service'])
-                     .replace("[tgt_user]", tgt_db_config['user'])
-                     )
+    html_template = (
+        html_template.replace("[src_db_engine]", src_db_config["db_engine"])
+        .replace("[src_host]", src_db_config["host"])
+        .replace("[src_port]", str(src_db_config["port"]))
+        .replace("[src_database]", src_db_config["service"])
+        .replace("[src_user]", src_db_config["user"])
+        .replace("[tgt_db_engine]", tgt_db_config["db_engine"])
+        .replace("[tgt_host]", tgt_db_config["host"])
+        .replace("[tgt_port]", str(tgt_db_config["port"]))
+        .replace("[tgt_database]", tgt_db_config["service"])
+        .replace("[tgt_user]", tgt_db_config["user"])
+    )
 
     current_time = (
         datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")
@@ -56,13 +62,21 @@ def generate_data_validation_report(data):
     """
     Generates a HTML report for Data validation.
 
+    :param data: A list of lists.
+
     """
     html_table_data = ""
 
     for row in data:
         try:
-            schema, table, no_records_validated, no_records_differences, columns, msg = row.split(
-                "~")
+            (
+                schema,
+                table,
+                no_records_validated,
+                no_records_differences,
+                columns,
+                msg,
+            ) = row.split("~")
         except Exception as erro:
             print(row)
             continue
@@ -83,6 +97,7 @@ def generate_data_validation_report(data):
         else:
             html_row += f"<td></td>"
 
+        # Append message.
         html_row += f"<td>{msg}</td>"
 
         html_row += "</tr>"
@@ -95,9 +110,7 @@ def generate_data_validation_report(data):
         html_template = template.read()
 
     # Replace the table data in the HTML template.
-    html_template = html_template.replace(
-        "placeholder_data", html_table_data
-    )
+    html_template = html_template.replace("placeholder_data", html_table_data)
 
     current_time = (
         datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")
