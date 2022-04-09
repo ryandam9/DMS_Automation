@@ -45,6 +45,9 @@ def data_validation(src_config, tgt_config):
     6. Get the data from target table using the primary key data.
     7. Compare the data from source & target tables.
     """
+    for file in os.listdir('../logs'):
+        os.remove(os.path.join('../logs', file))
+
     # Step 1: Get the list of tables that are being migrated
     tables = get_tables_to_validate()
     print(f"-> Tables have been identified. Count: {len(tables)}")

@@ -1,3 +1,4 @@
+import os
 import sys
 import warnings
 
@@ -38,6 +39,8 @@ def oracle_table_to_df(config, query, params):
     service = config["service"]
     user = config["user"]
     password = config["password"]
+
+    print(f"Inside oracle_table_to_df(): PATH: {os.environ['PATH']}")
 
     try:
         with warnings.catch_warnings():
