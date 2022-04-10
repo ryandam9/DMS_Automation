@@ -208,4 +208,4 @@ DB Password can be supplied in two ways:
 ![](./data-validation-screen-shot-1.jpg) 
 
 ### Table structure validation
-![]()./table-structure-validation-screen-shot-1.jgp)
+![](./table-structure-validation-screen-shot-1.jgp)
