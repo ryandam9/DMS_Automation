@@ -58,16 +58,16 @@ def generate_table_metadata_compare_report(df, src_db_config, tgt_db_config):
     print(f"-> HTML report generated: {os.path.abspath(html_report)}")
 
 
-def generate_data_validation_report(data):
+def generate_data_validation_report(summary_rows, col_differences, counts):
     """
     Generates a HTML report for Data validation.
 
     :param data: A list of lists.
 
     """
-    html_table_data = ""
+    html_summary_table_data = ""
 
-    for row in data:
+    for row in summary_rows:
         try:
             (
                 schema,
@@ -76,8 +76,8 @@ def generate_data_validation_report(data):
                 no_records_differences,
                 columns,
                 msg,
-            ) = row.split("~")
-        except Exception as erro:
+            ) = row[0], row[1], row[2], row[3], row[4], row[5]
+        except Exception as err:
             print(row)
             continue
 
@@ -106,16 +106,39 @@ def generate_data_validation_report(data):
             html_row += f"<td class='bg-warning'>{msg}</td>"
 
         html_row += "</tr>"
-        html_table_data += html_row
+        html_summary_table_data += html_row
 
-    html_template = ""
+    # Now, process Column level differences.
+    html_col_diff_data = ""
+
+    for row in col_differences:
+        html_col_diff_data += "<tr>"
+
+        for cell in row:
+            html_col_diff_data += f"<td>{cell}</td>"
+
+        html_col_diff_data += "</tr>"
 
     # Read HTML template for this report.
+    html_template = ""
+
     with open("../config/html/layout_2.html") as template:
         html_template = template.read()
 
     # Replace the table data in the HTML template.
-    html_template = html_template.replace("placeholder_data", html_table_data)
+    html_template = html_template.replace(
+        "summary_placeholder_data", html_summary_table_data)
+    html_template = html_template.replace(
+        "column_differences_placeholder_data", html_col_diff_data)
+
+    html_template = html_template.replace(
+        "total_tables_validated_count", str(counts['total_tables']))
+    html_template = html_template.replace(
+        "complete_match_tables_count", str(counts['complete_match_tables']))
+    html_template = html_template.replace(
+        "skip_tables_count", str(counts['skip_tables']))
+    html_template = html_template.replace(
+        "error_tables_count", str(counts['error_tables']))
 
     current_time = (
         datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")

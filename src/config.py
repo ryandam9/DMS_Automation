@@ -48,7 +48,7 @@ SQL_ALCHEMY_ECHO_MODE = False
 
 # Enable this when it is failing to connect to the Database.
 # It shows the connecting string including the password.
-SHOW_CONNECTION_STRING = True
+SHOW_CONNECTION_STRING = False
 
 # Show generated queries or not
 show_generated_queries = False
