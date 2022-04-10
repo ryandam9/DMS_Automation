@@ -552,6 +552,7 @@ def generate_html_data():
     skip_tables = 0
     error_tables = 0
     complete_match_tables = 0
+    tables_with_differences = 0
     cols_with_differences = 0
 
     # From summary files, pick the last record. It tells the summary:
@@ -600,6 +601,8 @@ def generate_html_data():
 
                 if msg == "NO DATA DIFFERENCES FOUND":
                     complete_match_tables += 1
+                elif "records have data differences" in msg:
+                    tables_with_differences += 1
                 elif "skip" in msg.lower():
                     skip_tables += 1
                 elif "error" in msg.lower():
@@ -633,5 +636,6 @@ def generate_html_data():
     counts['skip_tables'] = skip_tables
     counts['error_tables'] = error_tables
     counts['complete_match_tables'] = complete_match_tables
+    counts['tables_with_differences'] = tables_with_differences
 
     return (summary_rows, col_differences, counts)

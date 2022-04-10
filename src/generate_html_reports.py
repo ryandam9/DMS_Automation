@@ -133,10 +133,16 @@ def generate_data_validation_report(summary_rows, col_differences, counts):
 
     html_template = html_template.replace(
         "total_tables_validated_count", str(counts['total_tables']))
+
     html_template = html_template.replace(
         "complete_match_tables_count", str(counts['complete_match_tables']))
+
+    html_template = html_template.replace(
+        "tables_with_differences_count", str(counts['tables_with_differences']))
+
     html_template = html_template.replace(
         "skip_tables_count", str(counts['skip_tables']))
+
     html_template = html_template.replace(
         "error_tables_count", str(counts['error_tables']))
 
