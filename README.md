@@ -202,3 +202,10 @@ DB Password can be supplied in two ways:
    - `SOURCE_DB_SECRET_KEY`  (Should be same as the one used in AWS Secrets Manager)
    - `TARGET_DB_SECRET_KEY` (Should be same as the one used in AWS Secrets Manager)
 ****
+
+## Demo
+### Data Validation
+![](./data-validation-screen-shot-1.jpg) 
+
+### Table structure validation
+![]()./table-structure-validation-screen-shot-1.jgp)
