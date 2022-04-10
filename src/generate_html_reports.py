@@ -1,29 +1,21 @@
 import os
 from datetime import datetime
 
+from utils import get_current_time
+
 
 def generate_table_metadata_compare_report(df, src_db_config, tgt_db_config):
-    """ 
+    """
     Generates a HTML Report for Table Metadata comparison.
 
     :param df: Dataframe containing the table metadata comparison.
     :param src_db_config: Source database configuration.
     :param tgt_db_config: Target database configuration.
     """
-    html_table_data = ""
-
-    for row in df.values.tolist():
-        html_row = "<tr>"
-
-        for cell in row:
-            html_row += f"<td>{cell}</td>"
-
-        html_row += "</tr>"
-        html_table_data += html_row
-
+    html_table_data = generate_html_table_rows(df.values.tolist())
     html_template = ""
 
-    # Read HTML template for this report.
+    # Read HTML template as a string
     with open("../config/html/layout_1.html") as template:
         html_template = template.read()
 
@@ -45,9 +37,7 @@ def generate_table_metadata_compare_report(df, src_db_config, tgt_db_config):
         .replace("[tgt_user]", tgt_db_config["user"])
     )
 
-    current_time = (
-        datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")
-    )
+    current_time = get_current_time()
 
     # Write the HTML report to a file.
     html_report = f"../table_structure_validation/table_metadata_compare_report_{current_time}.html"
@@ -60,26 +50,28 @@ def generate_table_metadata_compare_report(df, src_db_config, tgt_db_config):
 
 def generate_data_validation_report(summary_rows, col_differences, counts):
     """
-    Generates a HTML report for Data validation.
+    Writes a HTML report for Data validation.
 
-    :param data: A list of lists.
+    :param summary_rows: List of Lists
+    :param col_differences: List of Lists
+    :param counts: A dictionary containing the counts of the differences.
 
+    :return: None
     """
+    # ---------------------------------------------------------------------------------------------#
+    # Process summary rows
+    # ---------------------------------------------------------------------------------------------#
     html_summary_table_data = ""
 
     for row in summary_rows:
-        try:
-            (
-                schema,
-                table,
-                no_records_validated,
-                no_records_differences,
-                columns,
-                msg,
-            ) = row[0], row[1], row[2], row[3], row[4], row[5]
-        except Exception as err:
-            print(row)
-            continue
+        (schema, table, no_records_validated, no_records_differences, columns, msg,) = (
+            row[0],
+            row[1],
+            row[2],
+            row[3],
+            row[4],
+            row[5],
+        )
 
         html_row = "<tr>"
         html_row += f"<td>{schema}</td>"
@@ -87,10 +79,13 @@ def generate_data_validation_report(summary_rows, col_differences, counts):
         html_row += f"<td>{no_records_validated}</td>"
         html_row += f"<td>{no_records_differences}</td>"
 
+        # If there are no differences, this attribute can be empty.
         if len(columns.strip()) > 0:
             ul = "<ul>"
+
             for col in columns.split(","):
                 ul += f"<li>{col}</li>"
+
             ul += "</ul>"
 
             html_row += f"<td>{ul}</td>"
@@ -98,6 +93,7 @@ def generate_data_validation_report(summary_rows, col_differences, counts):
             html_row += f"<td></td>"
 
         # Append message.
+        # Identify appropriate color class for the message.
         if "no data differences found" in msg.lower():
             html_row += f"<td class='bg-success text-light'>{msg}</td>"
         elif "no data found" in msg.lower():
@@ -108,18 +104,14 @@ def generate_data_validation_report(summary_rows, col_differences, counts):
         html_row += "</tr>"
         html_summary_table_data += html_row
 
-    # Now, process Column level differences.
-    html_col_diff_data = ""
+    # ----------------------------------------------------------------------------------------------#
+    # Now, Process column level differences.
+    # ----------------------------------------------------------------------------------------------#
+    html_col_diff_data = generate_html_table_rows(col_differences)
 
-    for row in col_differences:
-        html_col_diff_data += "<tr>"
-
-        for cell in row:
-            html_col_diff_data += f"<td>{cell}</td>"
-
-        html_col_diff_data += "</tr>"
-
-    # Read HTML template for this report.
+    # ----------------------------------------------------------------------------------------------#
+    # Read HTML template for this report. Replace the placeholders with data.
+    # ----------------------------------------------------------------------------------------------#
     html_template = ""
 
     with open("../config/html/layout_2.html") as template:
@@ -127,28 +119,34 @@ def generate_data_validation_report(summary_rows, col_differences, counts):
 
     # Replace the table data in the HTML template.
     html_template = html_template.replace(
-        "summary_placeholder_data", html_summary_table_data)
-    html_template = html_template.replace(
-        "column_differences_placeholder_data", html_col_diff_data)
-
-    html_template = html_template.replace(
-        "total_tables_validated_count", str(counts['total_tables']))
-
-    html_template = html_template.replace(
-        "complete_match_tables_count", str(counts['complete_match_tables']))
-
-    html_template = html_template.replace(
-        "tables_with_differences_count", str(counts['tables_with_differences']))
-
-    html_template = html_template.replace(
-        "skip_tables_count", str(counts['skip_tables']))
-
-    html_template = html_template.replace(
-        "error_tables_count", str(counts['error_tables']))
-
-    current_time = (
-        datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")
+        "summary_placeholder_data", html_summary_table_data
     )
+
+    html_template = html_template.replace(
+        "column_differences_placeholder_data", html_col_diff_data
+    )
+
+    html_template = html_template.replace(
+        "total_tables_validated_count", str(counts["total_tables"])
+    )
+
+    html_template = html_template.replace(
+        "complete_match_tables_count", str(counts["complete_match_tables"])
+    )
+
+    html_template = html_template.replace(
+        "tables_with_differences_count", str(counts["tables_with_differences"])
+    )
+
+    html_template = html_template.replace(
+        "skip_tables_count", str(counts["skip_tables"])
+    )
+
+    html_template = html_template.replace(
+        "error_tables_count", str(counts["error_tables"])
+    )
+
+    current_time = get_current_time()
 
     # Write the HTML report to a file.
     html_report = f"../data_validation/data_validation_report_{current_time}.html"
@@ -157,3 +155,22 @@ def generate_data_validation_report(summary_rows, col_differences, counts):
         report.write(html_template)
 
     print(f"-> HTML report generated: {os.path.abspath(html_report)}")
+
+
+def generate_html_table_rows(l):
+    """
+    Takes a List of lists & returns a set of HTML Rows.
+
+    """
+    html_table_data = ""
+
+    for row in l:
+        html_row = "<tr>"
+
+        for cell in row:
+            html_row += f"<td>{cell}</td>"
+
+        html_row += "</tr>"
+        html_table_data += html_row
+
+    return html_table_data

@@ -276,3 +276,9 @@ def get_tables_to_validate():
 
     tables.sort(key=lambda x: x["schema"] + x["table"])
     return tables
+
+
+def get_current_time():
+    return (
+        datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")
+    )
