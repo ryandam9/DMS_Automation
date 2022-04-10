@@ -80,13 +80,14 @@ def data_validation(src_config, tgt_config):
         primary_keys[table].append(pk)
 
     print(f"-> Primary keys have been identified.")
+
     print(
-        f"-> Total tables: {no_tables}. Tables having primary keys: {len(primary_keys)}"
+        f"-> Total tables: {no_tables}."
+        f"Tables having primary keys: {len(primary_keys)}"
     )
 
-    # [print(f"{t:>30} : {k}") for t, k in primary_keys.items()]
-
-    # Perform data validation in parallel rather sequentially to get better performance.
+    # Perform data validation in parallel rather sequentially to
+    # get better performance.
     i = 0
     no_threads_per_cycle = PARALLEL_THREADS
 
@@ -130,17 +131,20 @@ def data_validation(src_config, tgt_config):
             break
         else:
             print(
-                f"-> {i} tables have been processed. Remaining tables: {no_tables - i}"
+                f"-> {i} tables have been processed. Remaining tables: "
+                f"{no_tables - i}"
             )
 
     print("-> Data validation completed.")
     print(
-        f"-> Results have been written to this location: {os.path.abspath('../data_validation')}"
+        f"-> Results have been written to this location: "
+        f"{os.path.abspath('../data_validation')}"
     )
 
     if DEBUG_DATA_VALIDATION:
         print(
-            f"-> Column level differences have been captured @ {os.path.abspath('../logs')}"
+            f"-> Column level differences have been captured @ "
+            f"{os.path.abspath('../logs')}"
         )
 
     # Generate data to for HTML report
@@ -161,23 +165,34 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         - Compares data from both sources.
         - Finally, writes the result to a spreadsheet.
     """
-    # Generate summary file
+    # ----------------------------------------------------------------------------------------------#
+    # Generate summary file                                                                         #
+    # ----------------------------------------------------------------------------------------------#
     summary_file = open(
         f"../logs/{schema}_{table}_data_validation_summary.log", "w")
 
     no_pk_cols = len(primary_key)
 
-    # At this point, we are not validating tables that don't have
-    # primary keys.
+    # ----------------------------------------------------------------------------------------------#
+    # At this point, we are not validating tables that don't have primary keys                      #
+    # ----------------------------------------------------------------------------------------------#
     if no_pk_cols == 0:
-        msg = f"{schema}~{table}~0~0~~{schema}.{table} does not have primary keys, skipping data validation!"
+        msg = (
+            f"{schema}~{table}~0~0~~{schema}.{table} does not have primary keys,"
+            "skipping data validation!"
+        )
         write_log_entry(summary_file, msg, True)
         return
     else:
-        msg = f"{schema}~{table}~0~0~~:{schema}.{table} has {no_pk_cols} columns as primary keys, proceeding with data validation!"
+        msg = (
+            f"{schema}~{table}~0~0~~:{schema}.{table} has {no_pk_cols} columns "
+            "as primary keys, proceeding with data validation!"
+        )
         write_log_entry(summary_file, msg, False)
 
+    # ----------------------------------------------------------------------------------------------#
     # Read source table
+    # ----------------------------------------------------------------------------------------------#
     try:
         source_df = read_data_from_source_db(src_config, schema, table)
     except SQLAlchemyError as e:
@@ -189,14 +204,22 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         return
 
     if len(source_df) == 0:
-        msg = f"{schema}~{table}~0~0~~{schema}.{table} does not have data in source DB, skipping data validation!"
+        msg = (
+            f"{schema}~{table}~0~0~~{schema}.{table} does not have data in source DB,"
+            " skipping data validation!"
+        )
         write_log_entry(summary_file, msg, True)
         return
     else:
-        msg = f"{schema}~{table}~0~0~~{len(source_df)} records have been fetched from the Source table!"
+        msg = (
+            f"{schema}~{table}~0~0~~{len(source_df)} records have been fetched from "
+            "the Source table!"
+        )
         write_log_entry(summary_file, msg, False)
 
+    # ----------------------------------------------------------------------------------------------#
     # Step 4: Capture the primary key data.
+    # ----------------------------------------------------------------------------------------------#
     try:
         primary_key = [x.lower() for x in primary_key]
         pk_values = source_df[primary_key].values.tolist()
@@ -208,7 +231,9 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         write_log_entry(summary_file, msg, True)
         return
 
+    # ----------------------------------------------------------------------------------------------#
     # Step 5: Prepare a query to fetch the data from target DB.
+    # ----------------------------------------------------------------------------------------------#
     query = "WITH temp AS ("
     for index, sample_pk_value in enumerate(pk_values):
         if index > 0:
@@ -242,10 +267,15 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
 
         query += f"a.{primary_key[i]} = temp.{primary_key[i]}"
 
-    msg = f"{schema}~{table}~0~0~~Query generated to execute on Target DB. {format_sql(query)}"
+    msg = (
+        f"{schema}~{table}~0~0~~Query generated to execute on Target DB. "
+        "{format_sql(query)}"
+    )
     write_log_entry(summary_file, msg, False)
 
-    # Step 6: Get the data from target table using the primary key data.
+    # ----------------------------------------------------------------------------------------------#
+    # Step 6: Get data from target table using the primary key data.                                #
+    # ----------------------------------------------------------------------------------------------#
     try:
         target_df = read_data_from_target_db(tgt_config, query)
     except SQLAlchemyError as e:
@@ -261,20 +291,24 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
         write_log_entry(summary_file, msg, True)
         return
     else:
-        msg = f"{schema}~{table}~0~0~~{len(target_df)} records have been fetched from the Target table!"
+        msg = (
+            f"{schema}~{table}~0~0~~{len(target_df)} records have been fetched from the"
+            "Target table!"
+        )
         write_log_entry(summary_file, msg, False)
 
-    # Step 7: Compare the data between source & target tables.
-    # We're going to combine the Source & Target Dataframes now.
-    # column names cannot be same. So, we'll rename the columns in the
-    # target DB.
+    # ----------------------------------------------------------------------------------------------#
+    # Step 7: Compare the data between source & target tables.  We're going to combine              #
+    # the Source & Target Dataframes now. So, column names cannot be same. We'll rename             #
+    # the columns in the target DB.                                                                 #
+    # ----------------------------------------------------------------------------------------------#
     try:
         columns = target_df.columns
         new_columns = []
         [new_columns.append("tgt_" + col) for col in columns]
         target_df.columns = new_columns
 
-        # Now, we'll combine the Source & Target Dataframes.
+        # Now, Combine the Source & Target Dataframes.
         target_table_pk = []
         [target_table_pk.append("tgt_" + col.lower()) for col in primary_key]
 
@@ -300,22 +334,28 @@ def data_validation_single_table(schema, table, primary_key, src_config, tgt_con
             excel_file_location, sheet_name=f"{schema}_{table}", index=False
         )
     except Exception as err:
-        error = str(err)
-        msg = f"{schema}~{table}~0~0~~Error when comparing Source & Target Table. {error}"
+        error = str(err).strip("\n")
+        msg = (
+            f"{schema}~{table}~0~0~~Error when comparing Source & Target Table. {error}"
+        )
         write_log_entry(summary_file, msg, True)
         return
 
 
 def compare_data(df, schema, table, columns, primary_key, summary_file):
-    """ """
+    """
+    Source & Target data is present in same DF. Compare individual columns.
+    """
     no_cols_to_compare = len(columns)
     differences = {}
     no_recs_having_differences = 0
 
     primary_key_indexes = []
 
+    # ----------------------------------------------------------------------------------------------#
     # We know the Primary key column names, But, What we need is their
     # Indices in the column list.
+    # ----------------------------------------------------------------------------------------------#
     for k in primary_key:
         i = columns.tolist().index(k)
         primary_key_indexes.append(i)
@@ -323,8 +363,10 @@ def compare_data(df, schema, table, columns, primary_key, summary_file):
     formatted_recs = []
     columns_having_differences = set()
 
+    # ----------------------------------------------------------------------------------------------#
+    # Loop through each row in the Dataframe.
+    # ----------------------------------------------------------------------------------------------#
     try:
-        # Loop through each row in the Dataframe.
         for index, rec in enumerate(df.values.tolist()):
             no_cols_having_differences = 0
             pk = ""
@@ -334,7 +376,9 @@ def compare_data(df, schema, table, columns, primary_key, summary_file):
 
             decision = "MATCH"
 
+            # --------------------------------------------------------------------------------------#
             # Compare all the columns in the record.
+            # --------------------------------------------------------------------------------------#
             for i in range(no_cols_to_compare):
                 source_cell = rec[i]
                 target_cell = rec[i + no_cols_to_compare]
@@ -364,6 +408,7 @@ def compare_data(df, schema, table, columns, primary_key, summary_file):
                             }
                         )
 
+                        # Store the column that has difference
                         columns_having_differences.add(columns[i])
                         decision = "NO MATCH"
                 except Exception as err:
@@ -385,7 +430,9 @@ def compare_data(df, schema, table, columns, primary_key, summary_file):
                     columns_having_differences.add(columns[i])
                     decision = "NO MATCH"
 
+            # --------------------------------------------------------------------------------------#
             # If there are differences in a record, increment the counter.
+            # --------------------------------------------------------------------------------------#
             if no_cols_having_differences > 0:
                 no_recs_having_differences += 1
 
@@ -397,45 +444,60 @@ def compare_data(df, schema, table, columns, primary_key, summary_file):
         write_log_entry(summary_file, msg, True)
         return
 
+    # --------------------------------------------------------------------------------------#
     # Create a new dataframe from the old DataFrame. Only difference is that
     # a new column "result" is added.
+    # --------------------------------------------------------------------------------------#
     formatted_df_cols = df.columns.tolist()
     formatted_df_cols.append("result")
     formatted_df = pd.DataFrame(formatted_recs, columns=formatted_df_cols)
 
     print(
-        f"-> {schema:>30s} {table:>30s} {str(no_recs_having_differences):>10s} differences found"
+        f"-> {schema:>30s} {table:>30s} {str(no_recs_having_differences):>10s} "
+        "differences found"
     )
 
-    if DEBUG_DATA_VALIDATION:
-        log_file = open(f"../logs/{schema}_{table}_data_validation.log", "w")
-
-        for row_no, col_diff_list in differences.items():
-            # rec = f"Index: {row_no + 1} Primary Key: {col_diff_list[0]['primary_key']}"
-            # log_file.write(rec + "\n")
-
-            col_diff_list.sort(key=lambda x: x["column"])
-
-            for col_diff in col_diff_list:
-                pk_data = col_diff_list[0]['primary_key']
-                col_name = col_diff['column']
-                src_value = str(col_diff['source_value'])
-                tgt_value = str(col_diff['target_value'])
-                msg = col_diff['message']
-
-                log_file.write(
-                    f"{schema}~{table}~{pk_data}~{col_name}~{src_value}~{tgt_value}~{msg}\n")
-
-        log_file.close()
-
-    # Table, no. of records validated, no. of records having differences, Columns having differences
+    # --------------------------------------------------------------------------------------#
+    # Write a Summary record.
+    # --------------------------------------------------------------------------------------#
     msg = "NO DATA DIFFERENCES FOUND"
 
     if no_recs_having_differences > 0:
         msg = f"{no_recs_having_differences} records have data differences"
 
-    line1 = f"{schema}~{table}~{len(df)}~{no_recs_having_differences}~{','.join(list(columns_having_differences))}~{msg}"
+    # Table, no. of records validated, no. of records having differences,
+    # Columns having differences
+    line1 = (
+        f"{schema}~"
+        f"{table}~"
+        f"{len(df)}~"
+        f"{no_recs_having_differences}~"
+        f"{','.join(list(columns_having_differences))}~"
+        f"{msg}"
+    )
     write_log_entry(summary_file, line1, True)
+
+    # --------------------------------------------------------------------------------------#
+    # Write Column differences
+    # --------------------------------------------------------------------------------------#
+    if DEBUG_DATA_VALIDATION:
+        log_file = open(f"../logs/{schema}_{table}_data_validation.log", "w")
+
+        for row_no, col_diff_list in differences.items():
+            col_diff_list.sort(key=lambda x: x["column"])
+
+            for col_diff in col_diff_list:
+                pk_data = col_diff_list[0]["primary_key"]
+                col_name = col_diff["column"]
+                src_value = str(col_diff["source_value"])
+                tgt_value = str(col_diff["target_value"])
+                msg = col_diff["message"]
+
+                log_file.write(
+                    f"{schema}~{table}~{pk_data}~{col_name}~{src_value}~{tgt_value}~{msg}\n"
+                )
+
+        log_file.close()
 
     return formatted_df
 
@@ -632,10 +694,10 @@ def generate_html_data():
                         print(err)
 
     counts = {}
-    counts['total_tables'] = total_tables
-    counts['skip_tables'] = skip_tables
-    counts['error_tables'] = error_tables
-    counts['complete_match_tables'] = complete_match_tables
-    counts['tables_with_differences'] = tables_with_differences
+    counts["total_tables"] = total_tables
+    counts["skip_tables"] = skip_tables
+    counts["error_tables"] = error_tables
+    counts["complete_match_tables"] = complete_match_tables
+    counts["tables_with_differences"] = tables_with_differences
 
     return (summary_rows, col_differences, counts)
