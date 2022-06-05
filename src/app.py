@@ -6,25 +6,16 @@ from dis import dis
 from pathlib import Path
 
 from config import DEFAULT_REGION, oracle_instance_client_path
-from dms import (
-    create_dms_tasks,
-    create_iam_role_for_dms_cloudwatch_logs,
-    delete_all_dms_tasks,
-    delete_dms_tasks,
-    describe_db_log_files,
-    describe_endpoints,
-    describe_table_statistics,
-    fetch_cloudwatch_logs_for_a_task,
-    list_dms_tasks,
-    prepare_include_file_for_a_schema,
-    run_dms_tasks,
-    test_db_connection,
-    validate_source_target_data,
-    validate_table_structure_single_table,
-    validate_table_structures_all,
-)
+from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
+                 delete_all_dms_tasks, delete_dms_tasks, describe_db_log_files,
+                 describe_endpoints, describe_table_statistics,
+                 fetch_cloudwatch_logs_for_a_task, list_dms_tasks,
+                 prepare_include_file_for_a_schema, run_dms_tasks,
+                 test_db_connection, validate_source_target_data,
+                 validate_table_structure_single_table,
+                 validate_table_structures_all)
 from process_input_files import process_input_files
-from utils import get_aws_cli_profile, print_messages, read_secret
+from utils import get_aws_cli_profile, print_messages
 
 current_platform = platform.system().lower()
 
@@ -60,7 +51,8 @@ parser.add_argument(
 )
 
 parser.add_argument("--task_arn", help="Specify the task arn", type=str)
-parser.add_argument("--table_name", help="Specify schema & table name", type=str)
+parser.add_argument(
+    "--table_name", help="Specify schema & table name", type=str)
 parser.add_argument("--schema", help="Specify a schema", type=str)
 
 args = parser.parse_args()
@@ -192,7 +184,8 @@ if args.action == "fetch_cloudwatch_logs_for_a_task" or args.action == "9":
         msg2 = "Usage: python app.py --action fetch_cloudwatch_logs_for_a_task --task_arn <task arn>"
         print_messages([[msg1], [msg2]], ["Error"])
     else:
-        fetch_cloudwatch_logs_for_a_task(args.profile, args.region, args.task_arn)
+        fetch_cloudwatch_logs_for_a_task(
+            args.profile, args.region, args.task_arn)
 
 # --------------------------------------------------------------------------------------------------#
 # Describe DMS End points                                                                           #

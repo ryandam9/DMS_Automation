@@ -97,7 +97,7 @@ python app.py --action validate_table_structures --table_name all
 python app.py --action prepare_include_file_for_a_schema
 python app.py --action delete_all_dms_tasks
 ```
-Rather than passing text based actions, the tool supports numefic IDs dedicated to each action.
+Rather than passing text based actions, the tool supports numeric IDs dedicated to each action.
 
 ```sh
 python app.py --action 1
@@ -116,6 +116,47 @@ python app.py --action 13
 python app.py --action 14
 python app.py --action 15
 ```
+
+****
+
+## How to use the tool?
+
+### Generate JSON files.
+
+- Update `config/include*.csv` file.
+
+### Generate JSON files & Create DMS tasks
+
+This step creates JSON files and also creates DMS tasks. To use this:
+
+- Update `config/include*.csv` file.
+- update the `src/config.py`  file to configure `replication_instance_arn`, `source_endpoint_arn`, `target_endpoint_arn`.
+
+The generated DMS tasks will have the options specified in `src/task_settings.py` file. 
+
+#### CLI Profile
+
+By default the too looks for `default` command line profile already configured and have the privilege to create DMS tasks. To use a different profile name  use `--profile <profile-name>` option.  
+
+#### Region
+
+By default, the tasks are created in `US-EAST-2` region. To use a different region, update the `DEFAULT_REGION` parameter `src/config.py`
+
+#### Verifying the JSON files
+
+The generated JSON file are stored at `json_files` directory in the project root. 
+
+### List DMS tasks
+
+### Run DMS tasks
+
+****
+
+## Configuration
+
+
+
+****
 
 ## To perform Data validation for Oracle Databases
 
