@@ -1,18 +1,11 @@
-import base64
-import json
 import os
-import sys
 import textwrap
 from datetime import datetime
 from pathlib import Path
 
-import boto3
 import openpyxl
-from botocore.exceptions import ClientError
 from openpyxl.styles.borders import Border, Side
 from tabulate import tabulate
-
-from config import SECRET_MANAGER_SECRET_NAME, csv_files_location
 
 
 def convert_schemas_to_lowercase():
@@ -174,111 +167,4 @@ def print_messages(messages, headers):
             headers=headers,
             tablefmt="fancy_grid",
         )
-    )
-
-
-def read_secret(profile, region, secret_key):
-    secret_name = SECRET_MANAGER_SECRET_NAME
-
-    # Create a Secrets Manager client
-    session = boto3.Session(profile_name=profile, region_name=region)
-
-    client = session.client(
-        service_name='secretsmanager'
-    )
-
-    try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
-
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'DecryptionFailureException':
-            # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
-            # Deal with the exception here, and/or rethrow at your discretion.
-            print(e)
-            sys.exit(1)
-        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
-            # An error occurred on the server side.
-            # Deal with the exception here, and/or rethrow at your discretion.
-            print(e)
-            sys.exit(1)
-        elif e.response['Error']['Code'] == 'InvalidParameterException':
-            # You provided an invalid value for a parameter.
-            # Deal with the exception here, and/or rethrow at your discretion.
-            print(e)
-            sys.exit(1)
-        elif e.response['Error']['Code'] == 'InvalidRequestException':
-            # You provided a parameter value that is not valid for the current state of the resource.
-            # Deal with the exception here, and/or rethrow at your discretion.
-            print(e)
-            sys.exit(1)
-        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
-            # We can't find the resource that you asked for.
-            # Deal with the exception here, and/or rethrow at your discretion.
-            msg1 = str(e)
-            msg2 = f"Secret not found: {secret_name}"
-            print_messages([[msg1], [msg2]], ['Error'])
-            sys.exit(1)
-    else:
-        # Decrypts secret using the associated KMS key.
-        # Depending on whether the secret is a string or binary, one of these fields will be populated.
-        if 'SecretString' in get_secret_value_response:
-            secret = get_secret_value_response['SecretString']
-
-            # Convert to a map
-            try:
-                secret = json.loads(secret)
-
-                if secret_key in secret.keys():
-                    return secret[secret_key]
-                else:
-                    msg1 = f"Secret key [{secret_key}] does not exist!! Did you supply the right name in config.py file?"
-                    print_messages([[msg1]], ["Error"])
-                    sys.exit(1)
-            except Exception as error:
-                msg1 = f"Unable to convert secret to JSON: {str(error)}"
-                msg2 = f"Secret: {secret}"
-                msg3 = "The secrets have to be stored in Key/Value format in Secrets manager!"
-                print_messages([[msg1], [msg2], [msg3]], ["Error"])
-                sys.exit(1)
-        else:
-            msg1 = "[SecretString] field is not populated in the response."
-            msg2 = get_secret_value_response
-            print_messages([[msg1], [msg2]], ["Error"])
-            sys.exit(1)
-
-
-def get_tables_to_validate():
-    """
-    This function reads the "INCLUDE" files in config folder and returns a list of tables to validate.
-
-    :return: A list of tables to validate. Each table is a map with keys:
-        'schema' and 'table'
-    """
-    tables = []
-
-    # Read the Input CSV Files & gather a list of Schemas and tables
-    # that are being migrated.
-    for file in os.listdir(csv_files_location):
-        file_full_path = os.path.join(csv_files_location, file)
-
-        if file.startswith("include"):
-            print(f"-> Reading {file}")
-
-            with open(file_full_path, "r") as f:
-                for line in f:
-                    schema, table = line.split(",")[0], line.split(",")[1]
-                    schema = schema.strip().upper()
-                    table = table.strip().upper()
-
-                    tables.append({"schema": schema, "table": table})
-
-    tables.sort(key=lambda x: x["schema"] + x["table"])
-    return tables
-
-
-def get_current_time():
-    return (
-        datetime.now().strftime("%Y_%m_%d %H:%M").replace(" ", "_").replace(":", "_")
     )

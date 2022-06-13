@@ -1,23 +1,15 @@
 import argparse
 import os
-import platform
 import sys
-from dis import dis
-from pathlib import Path
 
-from config import DEFAULT_REGION, oracle_instance_client_path
+from config import DEFAULT_REGION
 from dms import (create_dms_tasks, create_iam_role_for_dms_cloudwatch_logs,
                  delete_all_dms_tasks, delete_dms_tasks, describe_db_log_files,
                  describe_endpoints, describe_table_statistics,
                  fetch_cloudwatch_logs_for_a_task, list_dms_tasks,
-                 prepare_include_file_for_a_schema, run_dms_tasks,
-                 test_db_connection, validate_source_target_data,
-                 validate_table_structure_single_table,
-                 validate_table_structures_all)
+                 run_dms_tasks, test_db_connection)
 from process_input_files import process_input_files
 from utils import get_aws_cli_profile, print_messages
-
-current_platform = platform.system().lower()
 
 # --------------------------------------------------------------------------------------------------#
 # Main section                                                                                      #
@@ -38,10 +30,7 @@ actions = [
     "[9] fetch_cloudwatch_logs_for_a_task",
     "[10] describe_endpoints",
     "[11] describe_db_log_files",
-    "[12] validate_table_structures",
-    "[13] validate_data",
-    "[14] prepare_include_file_for_a_schema",
-    "[15] delete_all_dms_tasks",
+    "[12] delete_all_dms_tasks",
 ]
 
 parser.add_argument(
@@ -51,9 +40,6 @@ parser.add_argument(
 )
 
 parser.add_argument("--task_arn", help="Specify the task arn", type=str)
-parser.add_argument(
-    "--table_name", help="Specify schema & table name", type=str)
-parser.add_argument("--schema", help="Specify a schema", type=str)
 
 args = parser.parse_args()
 
@@ -117,12 +103,6 @@ else:
 # --------------------------------------------------------------------------------------------------#
 if not os.path.exists("../logs"):
     os.mkdir("../logs")
-
-if not os.path.exists("../table_structure_validation"):
-    os.mkdir("../table_structure_validation")
-
-if not os.path.exists("../data_validation"):
-    os.mkdir("../data_validation")
 
 if not os.path.exists("../json_files"):
     os.mkdir("../json_files")
@@ -200,83 +180,7 @@ if args.action == "describe_db_log_files" or args.action == "11":
     describe_db_log_files(args.profile, args.region)
 
 # --------------------------------------------------------------------------------------------------#
-# Validate table structures between SOURCE & TARGET DBs                                             #
-# --------------------------------------------------------------------------------------------------#
-if (
-    args.action == "validate_table_structures"
-    or args.action == "validate_data"
-    or args.action == "12"
-    or args.action == "13"
-):
-    # Using cx_Oracle requires Oracle Client libraries to be installed. These provide the necessary
-    # network connectivity allowing cx_Oracle to access an Oracle Database instance.
-    if "windows" in current_platform:
-        current_path = os.environ["PATH"]
-        updated_path = oracle_instance_client_path + ";" + current_path
-        os.environ["PATH"] = updated_path
-
-        client_path = updated_path.split(";")[0]
-        print(f"PATH is set to: {client_path}")
-
-        msg1 = f"Please make sure that Oracle Instant Client is available at {oracle_instance_client_path}."
-        msg2 = "Download it from https://www.oracle.com/database/technologies/instant-client/winx64-64-downloads.html"
-        msg3 = "Follow the instructions from https://cx-oracle.readthedocs.io/en/latest/user_guide/installation.html#wininstall"
-        print_messages([[msg1], [msg2], [msg3]], ["INFO"])
-
-        if not os.path.exists(f"{oracle_instance_client_path}/oci.dll"):
-            msg1 = f"Oracle client path {oracle_instance_client_path} seems incorrect!!"
-            msg2 = "Does the specified path contain oci.dll, and other files ??"
-            msg3 = "Update correct path @ " + os.path.abspath("config.py")
-            print_messages([[msg1], [msg2], [msg3]], ["ERROR"])
-            sys.exit(1)
-
-
-if args.action == "validate_table_structures" or args.action == "12":
-    if args.table_name is None:
-        args.table_name = "all"
-
-    msg1 = "The 'validate_table_structures' action currently supports the following databases:"
-    msg2 = "SOURCE DB: Oracle"
-    msg3 = "TARGET DB: Postgres"
-    print_messages([[msg1], [msg2], [msg3]], ["INFO"])
-
-    if args.table_name == "all":
-        validate_table_structures_all(args.profile, args.region)
-    else:
-        validate_table_structure_single_table(
-            args.profile,
-            args.region,
-            args.table_name,
-            True,
-        )
-# --------------------------------------------------------------------------------------------------#
-# Validate data between SOURCE & TARGET DBs                                                         #
-# --------------------------------------------------------------------------------------------------#
-if args.action == "validate_data" or args.action == "13":
-    msg1 = "The 'validate_data' action currently supports the following databases:"
-    msg2 = "SOURCE DB: Oracle"
-    msg3 = "TARGET DB: Postgres"
-    msg4 = "Update PARALLEL_THREADS for faster comparison to 5 or more. Default is 1."
-    msg5 = "Update DATA_VALIDATION_REC_COUNT to change the number of records to be compared. Default is 1000."
-    print_messages([[msg1], [msg2], [msg3], [msg4], [msg5]], ["INFO"])
-
-    validate_source_target_data(args.profile, args.region)
-
-
-# --------------------------------------------------------------------------------------------------#
-# Prepare Include file for a given schema                                                           #
-# --------------------------------------------------------------------------------------------------#
-if args.action == "prepare_include_file_for_a_schema" or args.action == "14":
-    if args.schema is None:
-        msg1 = "Please specify a schema"
-        msg2 = "Sample: python app.py --action 14 --schema SYS"
-        print_messages([[msg1], [msg2]], ["Error"])
-        sys.exit(1)
-
-    prepare_include_file_for_a_schema(args.profile, args.region, args.schema)
-
-# --------------------------------------------------------------------------------------------------#
 # Delete all DMS Tasks                                                                              #
 # --------------------------------------------------------------------------------------------------#
-if args.action == "delete_all_dms_tasks" or args.action == "15":
+if args.action == "delete_all_dms_tasks" or args.action == "12":
     delete_all_dms_tasks(args.profile, args.region)

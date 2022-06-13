@@ -2,7 +2,8 @@ import collections
 import json
 import os
 
-from config import csv_files_location, json_files_location
+from config import (csv_files_location, homegeneous_migration,
+                    json_files_location)
 from utils import (convert_columns_to_lowercase, convert_schemas_to_lowercase,
                    convert_tables_to_lowercase)
 
@@ -10,7 +11,8 @@ from utils import (convert_columns_to_lowercase, convert_schemas_to_lowercase,
 # Create named tuples to hold Table, and filter attributes                                        #
 # ------------------------------------------------------------------------------------------------#
 # Each table should be associated with a schema. Table will have filters applied to it.
-Table = collections.namedtuple("Table", "schema, table, filters, auto_partitioned")
+Table = collections.namedtuple(
+    "Table", "schema, table, filters, auto_partitioned")
 
 # Each filter is composed of three attributes
 #  1. Column name
@@ -209,10 +211,11 @@ def create_tasks_for_no_filter_tables(tables):
 
             data["rules"].append(entry)
 
-        # Add a Transformation
-        data["rules"].append(convert_schemas_to_lowercase())
-        data["rules"].append(convert_tables_to_lowercase())
-        data["rules"].append(convert_columns_to_lowercase())
+        if not homegeneous_migration:
+            # Add a Transformation
+            data["rules"].append(convert_schemas_to_lowercase())
+            data["rules"].append(convert_tables_to_lowercase())
+            data["rules"].append(convert_columns_to_lowercase())
 
         with open(os.path.join(json_files_location, file_name), "w") as fp:
             json.dump(data, fp)
@@ -281,10 +284,11 @@ def create_tasks_for_filter_tables(tables):
         entry["filters"] = filter_conditions
         data["rules"].append(entry)
 
-        # Add a Transformation
-        data["rules"].append(convert_schemas_to_lowercase())
-        data["rules"].append(convert_tables_to_lowercase())
-        data["rules"].append(convert_columns_to_lowercase())
+        if not homegeneous_migration:
+            # Add a Transformation
+            data["rules"].append(convert_schemas_to_lowercase())
+            data["rules"].append(convert_tables_to_lowercase())
+            data["rules"].append(convert_columns_to_lowercase())
 
         file_name = f"{table.schema}-{table.table}-{part_of_filename}.json"
         file_name = file_name.replace("_", "-").lower()

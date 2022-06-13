@@ -250,3 +250,12 @@ DB Password can be supplied in two ways:
 
 ### Table structure validation
 ![](./table-structure-validation-screen-shot-1.jpg)
+
+
+
+
+
+```
+fetch_cloudwatch_logs_for_a_task
+```
+
